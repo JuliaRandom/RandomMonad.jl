@@ -61,6 +61,12 @@ end
     m = MixtureModel([Normal(), CloseOpen()], (1,2))
     @test eltype(m.components) == Distribution{Float64} # not crucial
 
+    m = MixtureModel([Normal(), CloseOpen()])
+    @test m.prior.cdf == [0.5, 1.0]
+    # test that the first argument doesn't need to have length defined
+    m = MixtureModel(Iterators.takewhile(_->true, (Normal(), Exponential(), CloseOpen())))
+    @test m.prior.cdf == [1/3, 2/3, 1.0]
+
     @test_throws ArgumentError MixtureModel([1:3, Normal()], [1, 2, 3])
 end
 

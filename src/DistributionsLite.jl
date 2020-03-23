@@ -2,11 +2,11 @@ module DistributionsLite
 
 export Distribution
 
-export Uniform
+export Normal, Uniform
 
-using Random: AbstractRNG, gentype, Repetition
+using Random: AbstractRNG, gentype, randn, Repetition, SamplerSimple, SamplerTrivial
 
-import Random: Sampler
+import Random: rand, Sampler
 
 
 """

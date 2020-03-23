@@ -3,7 +3,7 @@ module RandomMonad
 export Distribution
 
 export Bernoulli, Categorical, CloseOpen, OpenClose, OpenOpen, CloseClose,
-       Exponential, MixtureModel, Normal, Uniform
+       Exponential, Filter, MixtureModel, Normal, Uniform
 
 using Random: AbstractRNG, gentype, randexp, randn, Random, Repetition,
       SamplerSimple, SamplerTag, SamplerTrivial
@@ -31,6 +31,7 @@ Base.eltype(::Type{<:Distribution{T}}) where {T} = T
 
 include("distributions.jl")
 include("floatintervals.jl")
+include("adapters.jl")
 
 
 end # module

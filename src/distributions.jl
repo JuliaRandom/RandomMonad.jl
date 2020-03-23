@@ -106,6 +106,45 @@ Sampler(RNG::Type{<:AbstractRNG}, c::Categorical, n::Repetition) =
 #   T(searchsortedfirst(sp[].cdf, rand(rng, sp.data)))
 
 
+## Mixture Model
+
+struct MixtureModel{T} <: Distribution{T}
+    components::Vector{Distribution{<:T}}
+    prior::Categorical{Int}
+
+    function MixtureModel{T}(components, prior::Categorical) where T
+        length(components) != length(prior.cdf) && throw(ArgumentError(
+            "the number of components does not match the length of prior"))
+        new{T}(components, prior)
+    end
+end
+
+function MixtureModel(components, prior)
+    prior = convert(Categorical{Int}, prior)
+    T = reduce(typejoin, (gentype(x) for x in components))
+    v = Distribution{<:T}[d isa Distribution ? d : Uniform(d) for d in components]
+    MixtureModel{T}(v, prior)
+end
+
+
+### sampling
+
+Sampler(RNG::Type{<:AbstractRNG}, m::MixtureModel, n::Val{1}) =
+    SamplerSimple(m, Sampler(RNG, m.prior, n))
+
+rand(rng::AbstractRNG, sp::SamplerSimple{<:MixtureModel}) =
+    rand(rng, sp[].components[rand(rng, sp.data)])::gentype(sp)
+
+# WARNING: expensive, for less than 100 number generations or so, use Val(1) Sampler
+Sampler(RNG::Type{<:AbstractRNG}, m::MixtureModel{T}, n::Val{Inf}) where {T} =
+    SamplerTag{typeof(m)}(
+        (components = Sampler{<:T}[Sampler(RNG, c, n) for c in m.components],
+         prior      = Sampler(RNG, m.prior, n)))
+
+rand(rng::AbstractRNG, sp::SamplerTag{<:MixtureModel}) =
+    rand(rng, sp.data.components[rand(rng, sp.data.prior)])::gentype(sp)
+
+
 ## Normal
 
 abstract type Normal{T} <: Distribution{T} end

@@ -16,3 +16,10 @@ end
     @test rand(Normal(Float32)) isa Float32
     @test rand(Normal(ComplexF64)) isa ComplexF64
 end
+
+@testset "Exponential" begin
+    @test rand(Exponential()) isa Float64
+    @test rand(Exponential(1.0)) isa Float64
+    @test rand(Exponential(1)) isa Float64
+    @test rand(Exponential(Float32)) isa Float32
+end

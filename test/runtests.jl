@@ -112,3 +112,16 @@ end
         @test CO(1, Float32(2)) isa CO{Float32}
     end
 end
+
+
+## adapters
+
+@testset "Filter" begin
+    d = Filter(x -> x > 0, Normal())
+    @test all(x -> x > 0, rand(d, 1000))
+    d = Filter(x -> x < 4, Categorical([1, 7, 2, 10]))
+    # cf. Bernoulli tests
+    @test 620 < count(==(2), rand(d, 1000)) < 780
+    d = Filter(x -> x < 9, 1:20)
+    @test all(x -> 1 <= x <= 9, rand(d, 1000))
+end

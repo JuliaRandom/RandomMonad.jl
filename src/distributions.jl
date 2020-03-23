@@ -120,10 +120,10 @@ struct MixtureModel{T,CT<:Distribution} <: Distribution{T}
     end
 end
 
-function MixtureModel(components, prior)
-    prior = convert(Categorical{Int}, prior)
+function MixtureModel(components, prior=nothing)
     T = reduce(typejoin, (gentype(x) for x in components))
     v = [d isa Distribution ? d : Uniform(d) for d in components]
+    prior = convert(Categorical{Int}, something(prior, Categorical(length(v))))
     MixtureModel{T}(v, prior)
 end
 

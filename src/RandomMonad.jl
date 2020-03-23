@@ -2,9 +2,10 @@ module RandomMonad
 
 export Distribution
 
-export Exponential, Normal, Uniform
+export CloseOpen, OpenClose, OpenOpen, CloseClose, Exponential, Normal, Uniform
 
-using Random: AbstractRNG, gentype, randexp, randn, Repetition, SamplerSimple, SamplerTrivial
+using Random: AbstractRNG, gentype, randexp, randn, Random, Repetition,
+      SamplerSimple, SamplerTag, SamplerTrivial
 
 import Random: rand, Sampler
 
@@ -28,6 +29,7 @@ Base.eltype(::Type{<:Distribution{T}}) where {T} = T
 
 
 include("distributions.jl")
+include("floatintervals.jl")
 
 
 end # module

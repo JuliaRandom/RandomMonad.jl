@@ -48,6 +48,54 @@ rand(rng::AbstractRNG, sp::SamplerTag{Bernoulli{T}}) where {T} =
     ifelse(rand(rng, CloseOpen12()) < sp.data, one(T), zero(T))
 
 
+## Categorical
+
+struct Categorical{T<:Number} <: Distribution{T}
+    cdf::Vector{Float64}
+
+    function Categorical{T}(weigths) where T
+        if !isa(weigths, AbstractArray)
+            # necessary for accumulate
+            # TODO: will not be necessary anymore in Julia 1.5
+            weigths = collect(weigths)
+        end
+        weigths = vec(weigths)
+
+        isempty(weigths) &&
+            throw(ArgumentError("Categorical requires at least one category"))
+
+        s = Float64(sum(weigths))
+        cdf = accumulate(weigths; init=0.0) do x, y
+            x + Float64(y) / s
+        end
+        @assert isapprox(cdf[end], 1.0) # really?
+        cdf[end] = 1.0 # to be sure the algo terminates
+        new{T}(cdf)
+    end
+end
+
+Categorical(weigths) = Categorical{Int}(weigths)
+
+Categorical(n::Number) =
+    Categorical{typeof(n)}(Iterators.repeated(1.0 / Float64(n), Int(n)))
+
+
+### sampling
+
+Sampler(RNG::Type{<:AbstractRNG}, c::Categorical, n::Repetition) =
+    SamplerSimple(c, Sampler(RNG, CloseOpen(), n))
+
+# unfortunately requires @inline to avoid allocating
+@inline rand(rng::AbstractRNG, sp::SamplerSimple{Categorical{T}}) where {T} =
+    let c = rand(rng, sp.data)
+        T(findfirst(x -> x >= c, sp[].cdf))
+    end
+
+# NOTE:
+# if length(cdf) is somewhere between 150 and 200, the following gets faster:
+#   T(searchsortedfirst(sp[].cdf, rand(rng, sp.data)))
+
+
 ## Normal
 
 abstract type Normal{T} <: Distribution{T} end

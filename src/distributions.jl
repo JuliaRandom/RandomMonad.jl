@@ -53,6 +53,8 @@ rand(rng::AbstractRNG, sp::SamplerTag{Bernoulli{T}}) where {T} =
 struct Categorical{T<:Number} <: Distribution{T}
     cdf::Vector{Float64}
 
+    Categorical{T}(c::Categorical) where {T} = new{T}(c.cdf)
+
     function Categorical{T}(weigths) where T
         if !isa(weigths, AbstractArray)
             # necessary for accumulate
@@ -78,6 +80,14 @@ Categorical(weigths) = Categorical{Int}(weigths)
 
 Categorical(n::Number) =
     Categorical{typeof(n)}(Iterators.repeated(1.0 / Float64(n), Int(n)))
+
+function Base.convert(::Type{Categorical{T}}, d) where {T}
+    d isa Number && throw(ArgumentError(
+        "can not convert a number to a Categorical distribution"))
+    Categorical{T}(d)
+end
+
+Base.convert(::Type{Categorical{T}}, d::Categorical{T}) where {T} = d
 
 
 ### sampling

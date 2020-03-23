@@ -38,6 +38,11 @@ end
     @test rand(c) isa Int
     @test rand(Categorical{Float64}((1, 2, 3, 4))) isa Float64
 
+    c = Categorical(3)
+    @test Categorical{Float64}(c) isa Categorical{Float64}
+    @test convert(Categorical{Float64}, c) isa Categorical{Float64}
+    @test_throws ArgumentError convert(Categorical{Float64}, 3)
+
     @test_throws ArgumentError Categorical(())
     @test_throws ArgumentError Categorical([])
     @test_throws ArgumentError Categorical(x for x in 1:0)

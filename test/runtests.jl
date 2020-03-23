@@ -48,6 +48,19 @@ end
     @test_throws ArgumentError Categorical(x for x in 1:0)
 end
 
+@testset "MixtureModel" begin
+    m = MixtureModel([100:300, Normal(), Uniform(500:1000)], [1, 7, 2])
+    x = rand(m)
+    testtype(x) = x isa Float64 || x isa Int
+    @test testtype(x)
+    xs = rand(m, 1000)
+    @test all(testtype, xs)
+    # cf. Bernoulli tests
+    @test 620 < count(x -> x isa Float64, xs) < 780
+
+    @test_throws ArgumentError MixtureModel([1:3, Normal()], [1, 2, 3])
+end
+
 @testset "Normal" begin
     @test rand(Normal()) isa Float64
     @test rand(Normal(0.0, 1.0)) isa Float64

@@ -53,3 +53,30 @@ Sampler(RNG::Type{<:AbstractRNG}, d::Normalμσ{T}, n::Repetition) where {T} =
 
 rand(rng::AbstractRNG, sp::SamplerSimple{Normalμσ{T},<:Sampler}) where {T} =
     sp[].μ + sp[].σ  * rand(rng, sp.data)
+
+
+## Exponential
+
+abstract type Exponential{T} <: Distribution{T} end
+
+struct Exponential1{T} <: Exponential{T} end
+
+struct Exponentialθ{T} <: Exponential{T}
+    θ::T
+end
+
+Exponential(::Type{T}=Float64) where {T<:AbstractFloat} = Exponential1{T}()
+Exponential(θ::T) where {T<:AbstractFloat} = Exponentialθ(θ)
+Exponential(θ::Real) = Exponentialθ(AbstractFloat(θ))
+
+
+### sampling
+
+rand(rng::AbstractRNG, ::SamplerTrivial{Exponential1{T}}) where {T<:AbstractFloat} =
+    randexp(rng, T)
+
+Sampler(RNG::Type{<:AbstractRNG}, d::Exponentialθ{T}, n::Repetition) where {T} =
+    SamplerSimple(d, Sampler(RNG, Exponential(T), n))
+
+rand(rng::AbstractRNG, sp::SamplerSimple{Exponentialθ{T},<:Sampler}) where {T} =
+    sp[].θ * rand(rng, sp.data)

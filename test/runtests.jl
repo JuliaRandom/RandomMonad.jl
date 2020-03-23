@@ -58,6 +58,9 @@ end
     # cf. Bernoulli tests
     @test 620 < count(x -> x isa Float64, xs) < 780
 
+    m = MixtureModel([Normal(), CloseOpen()], (1,2))
+    @test eltype(m.components) == Distribution{Float64} # not crucial
+
     @test_throws ArgumentError MixtureModel([1:3, Normal()], [1, 2, 3])
 end
 

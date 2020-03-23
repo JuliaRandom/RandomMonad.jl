@@ -24,6 +24,30 @@ Sampler(RNG::Type{<:AbstractRNG}, d::Union{UniformWrap,UniformType}, n::Repetiti
     Sampler(RNG, d[], n)
 
 
+## Bernoulli
+
+struct Bernoulli{T<:Number} <: Distribution{T}
+    p::Float64
+
+    Bernoulli{T}(p::Real) where {T} = let pf = Float64(p)
+        0.0 <= pf <= 1.0 ? new(pf) :
+            throw(DomainError(p, "Bernoulli: parameter p must satisfy 0.0 <= p <= 1.0"))
+    end
+end
+
+Bernoulli(p::Real=0.5) = Bernoulli(Int, p)
+Bernoulli(::Type{T}, p::Real=0.5) where {T<:Number} = Bernoulli{T}(p)
+
+
+### sampling
+
+Sampler(RNG::Type{<:AbstractRNG}, b::Bernoulli, n::Repetition) =
+    SamplerTag{typeof(b)}(b.p+1.0)
+
+rand(rng::AbstractRNG, sp::SamplerTag{Bernoulli{T}}) where {T} =
+    ifelse(rand(rng, CloseOpen12()) < sp.data, one(T), zero(T))
+
+
 ## Normal
 
 abstract type Normal{T} <: Distribution{T} end

@@ -2,7 +2,7 @@ module DistributionsLite
 
 export Distribution
 
-export CloseOpen, OpenClose, OpenOpen, CloseClose, Exponential, Normal, Uniform
+export Bernoulli, CloseOpen, OpenClose, OpenOpen, CloseClose, Exponential, Normal, Uniform
 
 using Random: AbstractRNG, gentype, randexp, randn, Random, Repetition,
       SamplerSimple, SamplerTag, SamplerTrivial

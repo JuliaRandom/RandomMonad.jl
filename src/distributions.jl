@@ -48,6 +48,31 @@ rand(rng::AbstractRNG, sp::SamplerTag{Bernoulli{T}}) where {T} =
     ifelse(rand(rng, CloseOpen12()) < sp.data, one(T), zero(T))
 
 
+## Binomial
+
+struct Binomial <: Distribution{Int}
+    n::Int
+    p::Float64
+
+    Binomial(n::Integer=1, p::Real=0.5) =
+        0.0 <= p <= 1.0 ? new(n, p) :
+            throw(DomainError(p, "Binomial: parameter p must satisfy 0.0 <= p <= 1.0"))
+end
+
+
+## sampling
+
+Sampler(RNG::Type{<:AbstractRNG}, b::Binomial, ::Repetition) =
+    SamplerTag{Binomial}((n  = b.n,
+                          p  = b.p + 1.0,
+                          sp = Sampler(RNG, CloseOpen12(), Val(Inf))))
+
+# TODO: implement non-naïve algo
+rand(rng::AbstractRNG, sp::SamplerTag{Binomial}) =
+    count(x -> x < sp.data.p,
+          (rand(rng, sp.data.sp) for _ = 1:sp.data.n))
+
+
 ## Categorical
 
 struct Categorical{T<:Number} <: Distribution{T}

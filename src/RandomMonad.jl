@@ -3,7 +3,8 @@ module RandomMonad
 export Distribution
 
 export Bernoulli, Binomial, Categorical, CloseOpen, OpenClose, OpenOpen,
-       CloseClose, Exponential, Filter, Map, MixtureModel, Normal, Uniform
+       CloseClose, Exponential, Filter, Map, MixtureModel, Normal, Uniform,
+       Zip
 
 using Random: AbstractRNG, gentype, randexp, randn, Random, Repetition,
       SamplerSimple, SamplerTag, SamplerTrivial

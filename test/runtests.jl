@@ -159,3 +159,10 @@ end
     @test rand(d) isa Float64
     @test all(x -> x ∈ (0.0, 1.0), rand(d, 100))
 end
+
+@testset "Zip" begin
+    z = Zip(Normal(), 1:3)
+    @test eltype(z) == Tuple{Float64,Int}
+    @test rand(z) isa Tuple{Float64,Int}
+    @test all(x -> x ∈ 1:3, last.(rand(z, 100)))
+end

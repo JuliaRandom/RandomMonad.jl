@@ -24,6 +24,19 @@ end
     end
 end
 
+@testset "Binomial" begin
+    b = Binomial(1000, 0.7)
+    @test rand(b) isa Int
+    @test eltype(b) == Int
+    @test 620 < rand(b) < 780
+    b = Binomial(1000)
+    @test b.p == 0.5
+    @test 420 < rand(b) < 580
+    b = Binomial()
+    @test b.n == 1
+    @test rand(b) ∈ 0:1
+end
+
 @testset "Categorical" begin
     n = rand(1:9)
     @test rand(Categorical(n)) ∈ 1:9

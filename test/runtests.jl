@@ -147,3 +147,15 @@ end
     d = Filter(x -> x < 9, 1:20)
     @test all(x -> 1 <= x <= 9, rand(d, 1000))
 end
+
+@testset "Map" begin
+    d = Map(x -> 2x, 1:3)
+    @test rand(d) ∈ 2:2:6
+    @test all(x -> x ∈ 2:2:6, rand(d, 100))
+    @test eltype(d) == Int
+    @test rand(d) isa Int
+
+    d = Map{Float64}(x -> x > 0, Normal())
+    @test rand(d) isa Float64
+    @test all(x -> x ∈ (0.0, 1.0), rand(d, 100))
+end

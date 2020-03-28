@@ -180,6 +180,18 @@ end
     @test allunique(rand(u, 2))
 end
 
+@testset "FisherYates" begin
+    u = FisherYates(1:3)
+    @test eltype(u) == Int
+    @test rand(u) ∈ 1:3
+    a = rand(u, 3)::Vector{Int}
+    @test allunique(a)
+
+    u = FisherYates('a':'z')
+    @test rand(u) isa Char
+    @test allunique(rand(u, 26))
+end
+
 ## containers
 
 @testset "Zip" begin

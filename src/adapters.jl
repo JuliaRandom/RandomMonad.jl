@@ -77,3 +77,29 @@ function rand(rng::AbstractRNG, sp::SamplerTag{<:Unique})
         return x
     end
 end
+
+
+## Fisher-Yates
+
+struct FisherYates{T,N,A} <: Distribution{T}
+    a::A
+
+    FisherYates(a::AbstractArray{T,N}) where {T,N} =
+        new{T,N,typeof(a)}(a)
+end
+
+Sampler(RNG::Type{<:AbstractRNG}, fy::FisherYates, n::Val{1}) =
+    Sampler(RNG, fy.a, n)
+
+Sampler(RNG::Type{<:AbstractRNG}, fy::FisherYates, n::Val{Inf}) =
+    SamplerSimple(fy, collect(1:length(fy.a)))
+
+function rand(rng::AbstractRNG, sp::SamplerSimple{<:FisherYates})
+    inds = sp.data
+    n = length(inds)
+    i = rand(rng, 1:n)
+    @inbounds x = inds[i]
+    @inbounds inds[i] = inds[end]
+    resize!(inds, n-1)
+    @inbounds sp[].a[x]
+end

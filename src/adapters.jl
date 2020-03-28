@@ -49,3 +49,31 @@ Sampler(RNG::Type{<:AbstractRNG}, m::Map, n::Val{Inf}) =
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Map{T}}) where {T} =
     convert(T, sp.data.f((rand(rng, d) for d in sp.data.d)...))
+
+
+## Unique
+
+struct Unique{T,X} <: Distribution{T}
+    x::X
+
+    Unique(x::X) where {X} = new{gentype(x),X}(x)
+end
+
+Unique(::Type{X}) where {X} = Unique(Uniform(X))
+
+Sampler(RNG::Type{<:AbstractRNG}, u::Unique, n::Val{1}) =
+    Sampler(RNG, u.x, n)
+
+Sampler(RNG::Type{<:AbstractRNG}, u::Unique, n::Val{Inf}) =
+    SamplerTag{typeof(u)}((x    = Sampler(RNG, u.x, n),
+                           seen = Set{gentype(u)}()))
+
+function rand(rng::AbstractRNG, sp::SamplerTag{<:Unique})
+    seen = sp.data.seen
+    while true
+        x = rand(rng, sp.data.x)
+        x in seen && continue
+        push!(seen, x)
+        return x
+    end
+end

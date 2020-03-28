@@ -169,6 +169,16 @@ end
     @test all(x -> x ∈ (0.0, 1.0), rand(d, 100))
 end
 
+@testset "Unique" begin
+    u = Unique(1:3)
+    @test eltype(u) == Int
+    @test rand(u) ∈ 1:3
+    a = rand(u, 3)::Vector{Int}
+    @test allunique(a)
+
+    u = Unique(Bool)
+    @test allunique(rand(u, 2))
+end
 
 ## containers
 

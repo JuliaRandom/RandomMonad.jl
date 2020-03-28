@@ -19,3 +19,26 @@ Sampler(RNG::Type{<:AbstractRNG}, m::Zip, n::Val{Inf}) =
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Zip{T}}) where {T} =
      (rand(rng, sp.data[1]), rand(rng, sp.data[2]))::T
+
+
+## Fill
+
+struct Fill{X,T,N} <: Distribution{Array{T,N}}
+    x::X
+    dims::Dims{N}
+
+    Fill(x::X, dims::Dims{N}) where {X,N} = new{X,gentype(x),N}(x, dims)
+end
+
+Fill(x, dims::Integer...) where {X} = Fill(x, Dims(dims))
+
+Fill(::Type{X}, dims::Dims{N})    where {X,N} = Fill(Uniform(X), dims)
+Fill(::Type{X}, dims::Integer...) where {X}   = Fill(Uniform(X), Dims(dims))
+
+
+Sampler(RNG::Type{<:AbstractRNG}, f::Fill, n::Repetition) =
+    SamplerTag{typeof(f)}((x    = Sampler(RNG, f.x, n),
+                           dims = f.dims))
+
+rand(rng::AbstractRNG, sp::SamplerTag{<:Fill}) =
+    rand(rng, sp.data.x, sp.data.dims)

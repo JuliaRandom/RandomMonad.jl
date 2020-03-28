@@ -37,7 +37,7 @@ Fill(::Type{X}, dims::Integer...) where {X}   = Fill(Uniform(X), Dims(dims))
 
 
 Sampler(RNG::Type{<:AbstractRNG}, f::Fill, n::Repetition) =
-    SamplerTag{typeof(f)}((x    = Sampler(RNG, f.x, n),
+    SamplerTag{typeof(f)}((x    = Sampler(RNG, f.x, Val(Inf)),
                            dims = f.dims))
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Fill}) =

@@ -227,3 +227,27 @@ Sampler(RNG::Type{<:AbstractRNG}, d::Exponentialθ{T}, n::Repetition) where {T} 
 
 rand(rng::AbstractRNG, sp::SamplerSimple{Exponentialθ{T},<:Sampler}) where {T} =
     sp[].θ * rand(rng, sp.data)
+
+
+## Poisson
+
+struct Poisson <: Distribution{Int}
+    λ::Float64
+
+    function Poisson(λ::Real=1.0)
+        λ < 0.0 && throw(ArgumentError("Poisson: parameter λ must be non-negative"))
+        new(λ)
+    end
+end
+
+function rand(rng::AbstractRNG, sp::SamplerTrivial{Poisson})
+    λ = sp[].λ
+    exponential = Sampler(rng, Exponential())
+    s = rand(rng, exponential)
+    x = 0
+    while s < λ
+        s += rand(rng, exponential)
+        x += 1
+    end
+    x
+end

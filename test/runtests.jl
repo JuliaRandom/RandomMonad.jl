@@ -99,6 +99,15 @@ end
     @test rand(Exponential(Float32)) isa Float32
 end
 
+@testset "Poisson" begin
+    p = Poisson()
+    @test p.λ == 1
+    @test rand(p) isa Int
+    @test rand(Poisson(2)) isa Int
+    @test rand(Poisson(3.0)) isa Int
+    @test rand(Poisson(0)) == 0
+end
+
 @testset "rand(::AbstractFloat)" begin
     # check that overridden methods still work
     m = MersenneTwister()

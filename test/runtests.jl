@@ -169,9 +169,29 @@ end
     @test all(x -> x ∈ (0.0, 1.0), rand(d, 100))
 end
 
+
+## containers
+
 @testset "Zip" begin
     z = Zip(Normal(), 1:3)
     @test eltype(z) == Tuple{Float64,Int}
     @test rand(z) isa Tuple{Float64,Int}
     @test all(x -> x ∈ 1:3, last.(rand(z, 100)))
+end
+
+@testset "Fill" begin
+    for f in (Fill(1:9, (2, 3)),
+              Fill(Uniform(1:9), 2, 3))
+        @test f isa Distribution{Array{Int,2}}
+        a = rand(f)
+        @test a isa Array{Int,2}
+        @test size(a) == (2, 3)
+        @test all(x -> x ∈ 1:9, a)
+    end
+    f = Fill(Float64)
+    @test rand(f) isa Array{Float64,0}
+    f = Fill(Float64, 0x2, Int128(3))
+    a = rand(f)
+    @test a isa Array{Float64,2}
+    @test size(a) == (2, 3)
 end

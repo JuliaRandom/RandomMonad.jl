@@ -32,6 +32,7 @@ Base.eltype(::Type{<:Distribution{T}}) where {T} = T
 
 include("distributions.jl")
 include("floatintervals.jl")
+include("containers.jl")
 include("adapters.jl")
 
 

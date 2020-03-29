@@ -68,6 +68,13 @@ Sampler(RNG::Type{<:AbstractRNG}, u::Unique, n::Val{Inf}) =
     SamplerTag{typeof(u)}((x    = Sampler(RNG, u.x, n),
                            seen = Set{gentype(u)}()))
 
+function reset!(sp::SamplerTag{<:Unique}, n=0)
+    seen = sp.data.seen
+    n > length(seen) && sizehint!(seen, n)
+    empty!(seen)
+    sp
+end
+
 function rand(rng::AbstractRNG, sp::SamplerTag{<:Unique})
     seen = sp.data.seen
     while true
@@ -92,7 +99,12 @@ Sampler(RNG::Type{<:AbstractRNG}, fy::FisherYates, n::Val{1}) =
     Sampler(RNG, fy.a, n)
 
 Sampler(RNG::Type{<:AbstractRNG}, fy::FisherYates, n::Val{Inf}) =
-    SamplerSimple(fy, collect(1:length(fy.a)))
+    reset!(SamplerSimple(fy, Vector{Int}(undef, length(fy.a))))
+
+function reset!(sp::SamplerSimple{<:FisherYates}, _=0)
+    copy!(sp.data, 1:length(sp[].a))
+    sp
+end
 
 function rand(rng::AbstractRNG, sp::SamplerSimple{<:FisherYates})
     inds = sp.data

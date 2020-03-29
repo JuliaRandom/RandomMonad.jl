@@ -17,6 +17,12 @@ Sampler(RNG::Type{<:AbstractRNG}, m::Zip, n::Val{Inf}) =
     SamplerTag{typeof(m)}((Sampler(RNG, m.a, n),
                            Sampler(RNG, m.b, n)))
 
+function reset!(sp::SamplerTag{<:Zip}, n=0)
+    reset!(sp.data[1], n)
+    reset!(sp.data[2], n)
+    sp
+end
+
 rand(rng::AbstractRNG, sp::SamplerTag{<:Zip{T}}) where {T} =
      (rand(rng, sp.data[1]), rand(rng, sp.data[2]))::T
 
@@ -41,4 +47,4 @@ Sampler(RNG::Type{<:AbstractRNG}, f::Fill, n::Repetition) =
                            dims = f.dims))
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Fill}) =
-    rand(rng, sp.data.x, sp.data.dims)
+    rand(rng, reset!(sp.data.x, prod(sp.data.dims)), sp.data.dims)

@@ -173,6 +173,19 @@ end
     @test all(x -> x ∈ (0.0, 1.0), rand(d, 100))
 end
 
+@testset "Reduce" begin
+    r = Reduce(+, Fill(1:3, 2))
+    @test rand(r) ∈ 2:6
+    @test eltype(r) == Int
+    @test all(x -> x==9, rand(Reduce(+, Zip((8,), (1,))), 10))
+    f = Fill(Reduce(+, Unique(1:4)), 2)
+    @test rand(f) isa Vector{Int}
+    # check that reset! works properly (otherwise, rand(f, 3) would never terminate)
+    v = rand(f, 3)
+    @test v isa Vector{Vector{Int}}
+    @test all(allunique, v)
+end
+
 @testset "Unique" begin
     u = Unique(1:3)
     @test eltype(u) == Int

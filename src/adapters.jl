@@ -56,6 +56,35 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Map{T}}) where {T} =
     convert(T, sp.data.f((rand(rng, d) for d in sp.data.d)...))
 
 
+## Reduce
+
+struct Reduce{T,F,D} <: Distribution{T}
+    f::F
+    d::D
+end
+
+Reduce{T}(f::F, d) where {T,F} = Reduce{T,F,typeof(d)}(f, d)
+
+# we only support reduce for f(::X, ::X) -> X
+# use Map + Base.reduce for more complicated cases
+Reduce(f::F, d) where {F} = Reduce{eltype(gentype(d))}(f, d)
+
+
+### sampling
+
+rand(rng::AbstractRNG, sp::SamplerTrivial{<:Reduce{T}}) where {T} =
+    convert(T, reduce(sp[].f, rand(rng, sp[].d)))
+
+Sampler(RNG::Type{<:AbstractRNG}, r::Reduce, n::Val{Inf}) =
+    SamplerTag{typeof(r)}((f = r.f,
+                           d = Sampler(RNG, r.d, n)))
+
+reset!(sp::SamplerTag{<:Reduce}, n=0) = (reset!(sp.data.d, n); sp)
+
+rand(rng::AbstractRNG, sp::SamplerTag{<:Reduce{T}}) where {T} =
+    convert(T, reduce(sp.data.f, rand(rng, sp.data.d)))
+
+
 ## Unique
 
 struct Unique{T,X} <: Distribution{T}

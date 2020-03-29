@@ -65,6 +65,18 @@ end
     @test_throws ArgumentError Categorical(x for x in 1:0)
 end
 
+@testset "Multinomial" begin
+    m = Multinomial(Categorical(3), 10)
+    @test rand(m) isa Vector{Int}
+    for a in rand(m, 3)
+        @test sum(a) == 10
+    end
+    m = Multinomial(Categorical([1, 0, 1]), 10)
+    a = rand(m)
+    @test a[2] == 0
+    @test a[1] + a[3] == 10
+end
+
 @testset "MixtureModel" begin
     m = MixtureModel([100:300, Normal(), Uniform(500:1000)], [1, 7, 2])
     x = rand(m)

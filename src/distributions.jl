@@ -131,6 +131,27 @@ Sampler(RNG::Type{<:AbstractRNG}, c::Categorical, n::Repetition) =
 #   T(searchsortedfirst(sp[].cdf, rand(rng, sp.data)))
 
 
+## Multinomial
+
+struct Multinomial <: Distribution{Vector{Int}}
+    cat::Categorical{Int}
+    n::Int
+end
+
+Sampler(RNG::Type{<:AbstractRNG}, m::Multinomial, n::Repetition) =
+    SamplerTag{Multinomial}((cat = Sampler(RNG, m.cat, n),
+                             n   = m.n))
+
+function rand(rng::AbstractRNG, sp::SamplerTag{Multinomial})
+    cat = sp.data.cat
+    v = zeros(Int, length(cat[].cdf))
+    for i = 1:sp.data.n
+        @inbounds v[rand(rng, cat)] += 1
+    end
+    v
+end
+
+
 ## Mixture Model
 
 struct MixtureModel{T,CT<:Distribution} <: Distribution{T}

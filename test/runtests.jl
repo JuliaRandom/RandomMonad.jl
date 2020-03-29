@@ -176,11 +176,13 @@ end
     a = rand(u, 3)::Vector{Int}
     @test allunique(a)
 
-    f = Fill(u, 3)
     z = Fill(Zip(u, u), 3)
     for i=1:3
         rz = rand(z)
-        for a = (rand(f), first.(rz), last.(rz))
+        for a = (rand(Fill(u, 3)), first.(rz), last.(rz),
+                 rand(Fill(Map(identity, u), 3)),
+                 rand(Fill(Map(+, (0,), u), 3)),
+                 rand(Filter(x->true, u)))
             @test all(in(1:3), a)
             @test allunique(a)
         end

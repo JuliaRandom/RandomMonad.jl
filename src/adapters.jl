@@ -14,6 +14,8 @@ Sampler(RNG::Type{<:AbstractRNG}, d::Filter, n::Repetition) =
     SamplerTag{typeof(d)}((f = d.f,
                            d = Sampler(RNG, d.d, n)))
 
+reset!(sp::SamplerTag{<:Filter}, n=0) = (reset!(sp.data.d, n); sp)
+
 rand(rng::AbstractRNG, sp::SamplerTag{<:Filter}) =
     while true
         x = rand(rng, sp.data.d)
@@ -46,6 +48,9 @@ rand(rng::AbstractRNG, sp::SamplerTrivial{<:Map{T}}) where {T} =
 Sampler(RNG::Type{<:AbstractRNG}, m::Map, n::Val{Inf}) =
     SamplerTag{typeof(m)}((f = m.f,
                            d = map(x -> Sampler(RNG, x, n), m.d)))
+
+reset!(sp::SamplerTag{<:Map}, n=0) =
+    (foreach(s -> reset!(s, n), sp.data.d); sp)
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Map{T}}) where {T} =
     convert(T, sp.data.f((rand(rng, d) for d in sp.data.d)...))

@@ -35,7 +35,7 @@ struct Bernoulli{T<:Number} <: Distribution{T}
     end
 end
 
-Bernoulli(p::Real=0.5) = Bernoulli(Int, p)
+Bernoulli(p::Real=0.5) = Bernoulli(Bool, p)
 Bernoulli(::Type{T}, p::Real=0.5) where {T<:Number} = Bernoulli{T}(p)
 
 

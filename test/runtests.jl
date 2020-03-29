@@ -11,6 +11,10 @@ end
 
 @testset "Bernoulli" begin
     @test rand(Bernoulli()) ∈ (0, 1)
+    @test rand(Bernoulli()) isa Bool
+    for T = (Int, UInt, Bool)
+        @test rand(Bernoulli(T)) ∈ (0, 1)
+    end
     @test rand(Bernoulli(1)) == 1
     @test rand(Bernoulli(0)) == 0
     # TODO: do the math to estimate proba of failure:

@@ -176,6 +176,16 @@ end
     a = rand(u, 3)::Vector{Int}
     @test allunique(a)
 
+    f = Fill(u, 3)
+    z = Fill(Zip(u, u), 3)
+    for i=1:3
+        rz = rand(z)
+        for a = (rand(f), first.(rz), last.(rz))
+            @test all(in(1:3), a)
+            @test allunique(a)
+        end
+    end
+
     u = Unique(Bool)
     @test allunique(rand(u, 2))
 end
@@ -186,6 +196,16 @@ end
     @test rand(u) ∈ 1:3
     a = rand(u, 3)::Vector{Int}
     @test allunique(a)
+
+    f = Fill(u, 3)
+    z = Fill(Zip(u, u), 3)
+    for i=1:3
+        rz = rand(z)
+        for a = (rand(f), first.(rz), last.(rz))
+            @test all(in(1:3), a)
+            @test allunique(a)
+        end
+    end
 
     u = FisherYates('a':'z')
     @test rand(u) isa Char

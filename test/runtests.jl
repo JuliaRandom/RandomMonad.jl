@@ -195,6 +195,10 @@ end
     end
     # test reset!
     @test all(==(1:9), sort!.(rand(Fill(Unique(1:9) + Uniform(0:0), 9), 2)))
+
+    # getindex
+    g = Const('a':'z')[Categorical(3)]
+    @test rand(g) ∈ 'a':'c'
 end
 
 @testset "Filter" begin

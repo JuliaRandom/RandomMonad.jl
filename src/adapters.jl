@@ -9,38 +9,60 @@ rand(::AbstractRNG, sp::SamplerTrivial{<:Const}) = sp[].x
 
 ## algebra
 
-struct Artith2{T,F,A,B} <: Distribution{T}
+struct Op2{T,F,A,B} <: Distribution{T}
     f::F
     a::A
     b::B
 
-    Artith2{T}(f::F, a::A, b::B) where {T,F,A,B} = new{T,F,A,B}(f, a, b)
+    Op2{T}(f::F, a::A, b::B) where {T,F,A,B} = new{T,F,A,B}(f, a, b)
 end
 
-Artith2(f::F, a::A, b::B) where {F,A,B} =
-    Artith2{typeof(f(one(gentype(a)), one(gentype(b))))}(f, a, b)
+Op2(f::F, a::A, b::B) where {F,A,B} =
+    Op2{typeof(f(one(gentype(a)), one(gentype(b))))}(f, a, b)
 
-Sampler(RNG::Type{<:AbstractRNG}, x::Artith2, n::Repetition) =
+Sampler(RNG::Type{<:AbstractRNG}, x::Op2, n::Repetition) =
     SamplerTag{typeof(x)}((f = x.f,
                            a = Sampler(RNG, x.a, n),
                            b = Sampler(RNG, x.b, n)))
 
-function reset!(sp::SamplerTag{<:Artith2}, n...)
+function reset!(sp::SamplerTag{<:Op2}, n...)
     reset!(sp.data.a, n...)
     reset!(sp.data.b, n...)
     sp
 end
 
-rand(rng::AbstractRNG, sp::SamplerTag{<:Artith2}) =
-    sp.data.f(rand(rng, sp.data.a), rand(rng, sp.data.b))
+rand(rng::AbstractRNG, sp::SamplerTag{<:Op2{T}}) where {T} =
+    sp.data.f(rand(rng, sp.data.a), rand(rng, sp.data.b))::T
+
+
+### instances
 
 for op = (:+, :-, :*, :/, :^)
     @eval begin
-        (Base.$op)(a::Distribution, b::Distribution) = Artith2($op, a,        b)
-        (Base.$op)(a,               b::Distribution) = Artith2($op, Const(a), b)
-        (Base.$op)(a::Distribution, b              ) = Artith2($op, a,        Const(b))
+        (Base.$op)(a::Distribution, b::Distribution) = Op2($op, a,        b)
+        (Base.$op)(a,               b::Distribution) = Op2($op, Const(a), b)
+        (Base.$op)(a::Distribution, b              ) = Op2($op, a,        Const(b))
     end
 end
+
+
+### getindex
+
+Op2(::typeof(getindex), a::A, b::B) where {A,B} =
+    Op2{eltype(gentype(a))}(getindex, a, b)
+
+"""
+    getindex(X::Distribution, Y::Distribution) :: Distribution
+
+Return a distribution yielding `x[y]` where `x <- X` and `y <- Y`.
+
+# Examples
+```julia
+julia> rand(Const('a':'z')[Uniform(1:3)])
+'b': ASCII/Unicode U+0062 (category Ll: Letter, lowercase)
+```
+"""
+Base.getindex(a::Distribution, b::Distribution) = Op2(getindex, a, b)
 
 
 ## Filter

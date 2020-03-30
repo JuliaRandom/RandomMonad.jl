@@ -163,6 +163,17 @@ end
 
 ## adapters
 
+@testset "Const" begin
+    @test rand(Const(1)) === 1
+    @test rand(Const(1:3)) === 1:3
+    @test eltype(Const(1:3)) == UnitRange{Int}
+    s = Set([1, 2, 3])
+    @test rand(Const(s)) === s
+    a = rand(Const(s), 9)
+    @test eltype(a) == Set{Int}
+    @test all(x -> x === s, a)
+end
+
 @testset "algebra" begin
     d = Uniform(Float64) + Uniform(1:3)
     @test eltype(d) == Float64

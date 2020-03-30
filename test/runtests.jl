@@ -279,8 +279,8 @@ end
     @test allunique(rand(u, 2))
 end
 
-@testset "FisherYates" begin
-    u = FisherYates(1:3)
+@testset "$ShuffleAlgo" for ShuffleAlgo = (FisherYates, SelfAvoid)
+    u = ShuffleAlgo(1:3)
     @test eltype(u) == Int
     @test rand(u) ∈ 1:3
     a = rand(u, 3)::Vector{Int}
@@ -296,9 +296,14 @@ end
         end
     end
 
-    u = FisherYates('a':'z')
+    u = ShuffleAlgo('a':'z')
     @test rand(u) isa Char
     @test allunique(rand(u, 26))
+
+    # test reset!
+    a = rand(Fill(Fill(ShuffleAlgo(1:9), 5), 2))
+    @test a isa Vector{Vector{Int}}
+    @test !allunique(vcat(a...))
 end
 
 ## containers

@@ -246,10 +246,7 @@ struct FisherYates{T,N,A} <: Distribution{T}
         new{T,N,typeof(a)}(a)
 end
 
-Sampler(RNG::Type{<:AbstractRNG}, fy::FisherYates, n::Val{1}) =
-    Sampler(RNG, fy.a, n)
-
-Sampler(RNG::Type{<:AbstractRNG}, fy::FisherYates, n::Val{Inf}) =
+Sampler(RNG::Type{<:AbstractRNG}, fy::FisherYates, ::Repetition) =
     reset!(SamplerSimple(fy, Vector{Int}(undef, length(fy.a))))
 
 function reset!(sp::SamplerSimple{<:FisherYates}, _=0)

@@ -304,6 +304,10 @@ end
     a = rand(Fill(Fill(ShuffleAlgo(1:9), 5), 2))
     @test a isa Vector{Vector{Int}}
     @test !allunique(vcat(a...))
+
+    # test Val(1)-sampler works
+    s = Random.Sampler(MersenneTwister, ShuffleAlgo(1:9), Val(1))
+    @test allunique(rand(s, 9))
 end
 
 ## containers

@@ -130,6 +130,44 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Reduce{T}}) where {T} =
     convert(T, reduce(sp.data.f, rand(rng, sp.data.d)))
 
 
+## Counts
+
+"""
+    Counts(x) :: Distribution{<:Dict}
+
+Create a distribution yielding a dictionary whose keys are the elements
+of the collection yielded by distribution `x`, and whose values are the
+number of times each element appeared in the collection.
+
+# Examples
+```julia
+julia> rand(Counts(Fill(Categorical([1/6, 2/6, 3/6]), 600)))
+Dict{Int64,Int64} with 3 entries:
+  2 => 193
+  3 => 306
+  1 => 101
+```
+"""
+struct Counts{T,X} <: Distribution{Dict{T,Int}}
+    x::X
+
+    Counts(x::X) where {X} = new{eltype(gentype(x)),X}(x)
+end
+
+Sampler(::Type{RNG}, c::Counts, n::Repetition) where {RNG<:AbstractRNG} =
+    SamplerTag{typeof(c)}(Sampler(RNG, c.x, n))
+
+reset!(sp::SamplerTag{<:Counts}, n...) = (reset!(sp.data, n...); sp)
+
+function rand(rng::AbstractRNG, sp::SamplerTag{<:Counts{T}}) where T
+    dict = Dict{T,Int}()
+    for x in rand(rng, sp.data)
+        dict[x] = get(dict, x, 0) + 1
+    end
+    dict
+end
+
+
 ## Unique
 
 struct Unique{T,X} <: Distribution{T}

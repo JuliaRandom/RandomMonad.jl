@@ -34,11 +34,13 @@ end
 rand(rng::AbstractRNG, sp::SamplerTag{<:Artith2}) =
     sp.data.f(rand(rng, sp.data.a), rand(rng, sp.data.b))
 
-Base.:+(a::Distribution, b::Distribution) = Artith2(+, a, b)
-Base.:-(a::Distribution, b::Distribution) = Artith2(-, a, b)
-Base.:*(a::Distribution, b::Distribution) = Artith2(*, a, b)
-Base.:/(a::Distribution, b::Distribution) = Artith2(/, a, b)
-Base.:^(a::Distribution, b::Distribution) = Artith2(^, a, b)
+for op = (:+, :-, :*, :/, :^)
+    @eval begin
+        (Base.$op)(a::Distribution, b::Distribution) = Artith2($op, a,        b)
+        (Base.$op)(a,               b::Distribution) = Artith2($op, Const(a), b)
+        (Base.$op)(a::Distribution, b              ) = Artith2($op, a,        Const(b))
+    end
+end
 
 
 ## Filter

@@ -179,13 +179,18 @@ end
     @test eltype(d) == Float64
     @test all(x -> 1.0 <= x < 4, rand(d, 100))
     for op = (+, -, *, ^, /)
-        d = op(Uniform(Int32), Uniform(Int32(1):Int32(3)))
-        if op == /
-            @test eltype(d) == Float64
-            @test rand(d) isa Float64
-        else
-            @test eltype(d) == Int32
-            @test rand(d) isa Int32
+        # Filter below for y^x needing x >= 0
+        for x = (Filter(x -> x >= 0, Uniform(Int32)), Int32(3))
+            for d = (op(x, Uniform(Int32(1):Int32(3))),
+                     op(Uniform(Int32(1):Int32(3)), x))
+                if op == /
+                    @test eltype(d) == Float64
+                    @test rand(d) isa Float64
+                else
+                    @test eltype(d) == Int32
+                    @test rand(d) isa Int32
+                end
+            end
         end
     end
     # test reset!

@@ -3,9 +3,9 @@ module DistributionsLite
 export Distribution
 
 export Bernoulli, Binomial, Categorical, CloseClose, CloseOpen, Const,
-       Counts, Exponential, Fill, Filter, FisherYates, Map, MixtureModel,
-       Multinomial, Normal, OpenClose, OpenOpen, Poisson, Reduce, Uniform,
-       Unique, Zip
+       counts, Counts, Exponential, Fill, Filter, FisherYates, Map,
+       MixtureModel, Multinomial, Normal, OpenClose, OpenOpen, Poisson,
+       Reduce, Uniform, Unique, Zip
 
 using Random: AbstractRNG, gentype, randexp, randn, Random, Repetition,
       SamplerSimple, SamplerTag, SamplerTrivial

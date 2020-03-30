@@ -5,7 +5,7 @@ export Distribution
 export Bernoulli, Binomial, Categorical, CloseClose, CloseOpen, Const,
        counts, Counts, Exponential, Fill, Filter, FisherYates, Map,
        MixtureModel, Multinomial, Normal, OpenClose, OpenOpen, Poisson,
-       Reduce, Uniform, Unique, Zip
+       Reduce, SelfAvoid, Uniform, Unique, Zip
 
 using Random: AbstractRNG, gentype, randexp, randn, Random, Repetition,
       SamplerSimple, SamplerTag, SamplerTrivial

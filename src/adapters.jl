@@ -266,3 +266,33 @@ function rand(rng::AbstractRNG, sp::SamplerSimple{<:FisherYates})
     resize!(inds, n-1)
     @inbounds sp[].a[x]
 end
+
+
+## SelfAvoid
+
+# cf. `self_avoid_sample!` in StatsBase.jl
+
+struct SelfAvoid{T,N,A} <: Distribution{T}
+    a::A
+
+    SelfAvoid(a::AbstractArray{T,N}) where {T,N} =
+        new{T,N,typeof(a)}(a)
+end
+
+Sampler(RNG::Type{<:AbstractRNG}, sa::SelfAvoid, ::Repetition) =
+    SamplerSimple(sa, (seen = Set{Int}(),
+                       idx  = Sampler(RNG, Base.OneTo(length(sa.a)), Val(Inf))))
+
+reset!(sp::SamplerSimple{<:SelfAvoid}, _=0) = (empty!(sp.data.seen); sp)
+
+function rand(rng::AbstractRNG, sp::SamplerSimple{<:SelfAvoid{T}})::T where T
+    seen = sp.data.seen
+    idx = sp.data.idx
+    while true
+        i = rand(rng, idx)
+        if !(i in seen)
+            push!(seen, i)
+            return @inbounds sp[].a[i]
+        end
+    end
+end

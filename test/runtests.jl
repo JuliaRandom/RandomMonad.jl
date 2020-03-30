@@ -163,6 +163,24 @@ end
 
 ## adapters
 
+@testset "algebra" begin
+    d = Uniform(Float64) + Uniform(1:3)
+    @test eltype(d) == Float64
+    @test all(x -> 1.0 <= x < 4, rand(d, 100))
+    for op = (+, -, *, ^, /)
+        d = op(Uniform(Int32), Uniform(Int32(1):Int32(3)))
+        if op == /
+            @test eltype(d) == Float64
+            @test rand(d) isa Float64
+        else
+            @test eltype(d) == Int32
+            @test rand(d) isa Int32
+        end
+    end
+    # test reset!
+    @test all(==(1:9), sort!.(rand(Fill(Unique(1:9) + Uniform(0:0), 9), 2)))
+end
+
 @testset "Filter" begin
     d = Filter(x -> x > 0, Normal())
     @test all(x -> x > 0, rand(d, 1000))

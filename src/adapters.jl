@@ -1,3 +1,37 @@
+## algebra
+
+struct Artith2{T,F,A,B} <: Distribution{T}
+    f::F
+    a::A
+    b::B
+
+    Artith2{T}(f::F, a::A, b::B) where {T,F,A,B} = new{T,F,A,B}(f, a, b)
+end
+
+Artith2(f::F, a::A, b::B) where {F,A,B} =
+    Artith2{typeof(f(one(gentype(a)), one(gentype(b))))}(f, a, b)
+
+Sampler(RNG::Type{<:AbstractRNG}, x::Artith2, n::Repetition) =
+    SamplerTag{typeof(x)}((f = x.f,
+                           a = Sampler(RNG, x.a, n),
+                           b = Sampler(RNG, x.b, n)))
+
+function reset!(sp::SamplerTag{<:Artith2}, n...)
+    reset!(sp.data.a, n...)
+    reset!(sp.data.b, n...)
+    sp
+end
+
+rand(rng::AbstractRNG, sp::SamplerTag{<:Artith2}) =
+    sp.data.f(rand(rng, sp.data.a), rand(rng, sp.data.b))
+
+Base.:+(a::Distribution, b::Distribution) = Artith2(+, a, b)
+Base.:-(a::Distribution, b::Distribution) = Artith2(-, a, b)
+Base.:*(a::Distribution, b::Distribution) = Artith2(*, a, b)
+Base.:/(a::Distribution, b::Distribution) = Artith2(/, a, b)
+Base.:^(a::Distribution, b::Distribution) = Artith2(^, a, b)
+
+
 ## Filter
 
 struct Filter{T,F,D<:Distribution{T}} <: Distribution{T}

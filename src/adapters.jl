@@ -1,3 +1,12 @@
+## Const
+
+struct Const{T} <: Distribution{T}
+    x::T
+end
+
+rand(::AbstractRNG, sp::SamplerTrivial{<:Const}) = sp[].x
+
+
 ## algebra
 
 struct Artith2{T,F,A,B} <: Distribution{T}

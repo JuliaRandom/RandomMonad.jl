@@ -284,6 +284,15 @@ end
     @test eltype(z) == Tuple{Float64,Int}
     @test rand(z) isa Tuple{Float64,Int}
     @test all(x -> x ∈ 1:3, last.(rand(z, 100)))
+
+    z = Zip()
+    @test rand(z) == ()
+    z = Zip(1:3)
+    @test rand(z) isa Tuple{Int}
+    @test rand(z)[1] in 1:3
+    z = Zip(1:2, Normal(), Int8)
+    @test rand(z) isa Tuple{Int,Float64,Int8}
+    @test all(x -> x isa Tuple{Int,Float64,Int8}, rand(z, 9))
 end
 
 @testset "Fill" begin

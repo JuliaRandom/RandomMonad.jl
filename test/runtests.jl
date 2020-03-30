@@ -232,6 +232,26 @@ end
     @test all(allunique, v)
 end
 
+@testset "Counts" begin
+    c = Counts(Fill(0x1:0x3, 100))
+    @test eltype(c) == Dict{UInt8,Int}
+    d = rand(c)
+    @test d isa Dict{UInt8,Int}
+    @test keys(d) ⊆ 1:3
+    @test 100 <= sum(values(d)) <= 300
+    # check reset! works
+    vs = rand(Fill(Counts(Unique(1:3)), 3), 3)
+    @test vs isa Vector{Vector{Dict{Int,Int}}}
+    for v in vs
+        ks = []
+        for d in v
+            append!(ks, keys(d))
+            @test collect(values(d)) == 1:1
+        end
+        @test sort!(ks) == 1:3
+    end
+end
+
 @testset "Unique" begin
     u = Unique(1:3)
     @test eltype(u) == Int

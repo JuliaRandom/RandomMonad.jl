@@ -167,6 +167,18 @@ function rand(rng::AbstractRNG, sp::SamplerTag{<:Counts{T}}) where T
     dict
 end
 
+"""
+    counts(x, [n::Integer])
+
+Equivalent to `rand(Counts(x))`, or to `rand(Counts(Fill(x, n)))`
+when `n` is specified.
+
+!!! warning
+    Experimental function.
+"""
+counts(x) = rand(Counts(x))
+counts(x, n) = rand(Counts(Fill(x, n)))
+
 
 ## Unique
 

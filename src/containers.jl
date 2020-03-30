@@ -1,30 +1,32 @@
 ## Zip
 
-# note: Zip(a, b) is similar to RandomExtensions.make(Tuple, a, b)
+# note: Zip(a, b...) is similar to RandomExtensions.make(Tuple, a, b...)
 
-struct Zip{T,A,B} <: Distribution{T}
-    a::A
-    b::B
+struct Zip{T,X} <: Distribution{T}
+    xs::X
 
-    Zip(a::A, b::B) where {A,B} =
-        new{Tuple{gentype(a),gentype(b)},A,B}(a, b)
+    function Zip(as...)
+        T = Tuple{map(gentype, as)...}
+        xs = map(a -> a isa DataType ? Uniform(a) : a, as)
+        new{T,typeof(xs)}(xs)
+    end
 end
 
 rand(rng::AbstractRNG, sp::SamplerTrivial{<:Zip{T}}) where {T} =
-     (rand(rng, sp[].a), rand(rng, sp[].b))::T
+    map(x -> rand(rng, x), sp[].xs)::T
 
-Sampler(RNG::Type{<:AbstractRNG}, m::Zip, n::Val{Inf}) =
-    SamplerTag{typeof(m)}((Sampler(RNG, m.a, n),
-                           Sampler(RNG, m.b, n)))
+Sampler(::Type{RNG}, z::Zip, n::Val{Inf}) where {RNG<:AbstractRNG} =
+    SamplerTag{typeof(z)}(map(x -> Sampler(RNG, x, n), z.xs))
 
-function reset!(sp::SamplerTag{<:Zip}, n=0)
-    reset!(sp.data[1], n)
-    reset!(sp.data[2], n)
+function reset!(sp::SamplerTag{<:Zip}, n...)
+    foreach(sp.data) do x
+        reset!(x, n...)
+    end
     sp
 end
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Zip{T}}) where {T} =
-     (rand(rng, sp.data[1]), rand(rng, sp.data[2]))::T
+    map(x -> rand(rng, x), sp.data)::T
 
 
 ## Fill

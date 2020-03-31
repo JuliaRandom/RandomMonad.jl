@@ -239,11 +239,11 @@ end
 
 ## Fisher-Yates
 
-struct FisherYates{T,N,A} <: Distribution{T}
+struct FisherYates{T,A} <: Distribution{T}
     a::A
 
     FisherYates(a::AbstractArray{T,N}) where {T,N} =
-        new{T,N,typeof(a)}(a)
+        new{T,typeof(a)}(a)
 end
 
 Sampler(::Type{RNG}, fy::FisherYates, ::Repetition) where {RNG<:AbstractRNG} =
@@ -288,11 +288,11 @@ end
 
 # cf. `self_avoid_sample!` in StatsBase.jl
 
-struct SelfAvoid{T,N,A} <: Distribution{T}
+struct SelfAvoid{T,A} <: Distribution{T}
     a::A
 
     SelfAvoid(a::AbstractArray{T,N}) where {T,N} =
-        new{T,N,typeof(a)}(a)
+        new{T,typeof(a)}(a)
 end
 
 Sampler(RNG::Type{<:AbstractRNG}, sa::SelfAvoid, ::Repetition) =

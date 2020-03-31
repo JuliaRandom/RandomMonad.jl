@@ -305,6 +305,9 @@ end
     @test a isa Vector{Vector{Int}}
     @test !allunique(vcat(a...))
 
+    # test reset!(sp, 1) works
+    @test all(in(1:4), vcat(rand(Fill(ShuffleAlgo(1:4), 1), 10)...))
+
     # test Val(1)-sampler works
     s = Random.Sampler(MersenneTwister, ShuffleAlgo(1:9), Val(1))
     @test allunique(rand(s, 9))

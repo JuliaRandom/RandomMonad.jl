@@ -376,6 +376,12 @@ function reset!(sp::SamplerShuffle, n=-1)
         if !isdefined(sp, :seen)
             sp.seen = Set{Int}()
         end
+        if !isdefined(sp, :inds)
+
+            sp.inds = Vector{Int}(undef, max(2, min(n, 100)))
+            sp.inds[end] = 0
+            sp.inds[end-1] = n
+        end
         sa_reset!(sp)
         sp.alg = 4
     end
@@ -392,10 +398,33 @@ function rand(rng::AbstractRNG, sp::SamplerShuffle)
         end
         sp.alg = -i
         return @inbounds sp.a[i]
+    end
+    inds = sp.inds
+    k = @inbounds inds[end]
+    if k > 0
+        @inbounds inds[end] = k - 1
+        return @inbounds sp.a[inds[k]]
+    elseif alg == 4
+        n = inds[end-1] #- 1 # -1 because we return 1 value from this block
+        k = min(n, length(inds)-2)
+        idx = sp.idx
+        seen = sp.seen
+        j = k
+        while j > 0
+            i = rand(rng, idx)
+            if !(i in seen)
+                push!(seen, i)
+                @inbounds inds[j] = i
+                j -= 1
+            end
+        end
+        @inbounds begin
+            inds[end] = k-1
+            inds[end-1] = n-k
+            sp.a[inds[k]]
+        end
     elseif alg == 3
         fy_rand(rng, sp.inds, sp.a)
-    elseif alg == 4
-        sa_rand(rng, sp)
     else
         rand(rng, reset!(sp))
     end

@@ -237,22 +237,30 @@ function rand(rng::AbstractRNG, sp::SamplerTag{<:Unique})
 end
 
 
-## Fisher-Yates
+## Shuffling
+
+### Fisher-Yates
 
 struct FisherYates{T,A} <: Distribution{T}
     a::A
 
-    FisherYates(a::AbstractArray{T,N}) where {T,N} =
+    FisherYates(a::AbstractArray{T}) where {T} =
         new{T,typeof(a)}(a)
 end
 
-Sampler(::Type{RNG}, fy::FisherYates, ::Repetition) where {RNG<:AbstractRNG} =
-    reset!(SamplerSimple(fy, Vector{Int}(undef, length(fy.a) + 1)))
-
-function reset!(sp::SamplerSimple{<:FisherYates}, n=length(sp[].a))
-    @inbounds sp.data[end] = -n # < 0 means not yet initialized
-    sp
+struct SamplerFisherYates{T,A} <: Sampler{T}
+    a::A
+    inds::Vector{Int}
 end
+
+fy_inds(a) = Vector{Int}(undef, length(a) + 1)
+
+Sampler(::Type{RNG}, fy::FisherYates{T,A}, ::Repetition) where {RNG<:AbstractRNG} where {T,A} =
+    reset!(SamplerFisherYates{T,A}(fy.a, fy_inds(fy.a)))
+
+fy_reset!(inds, n) = @inbounds inds[end] = -n # < 0 means not yet initialized
+
+reset!(sp::SamplerFisherYates, n=length(sp.a)) = (fy_reset!(sp.inds, n); sp)
 
 @noinline function fy_initialize!(rng, inds, k)
     k == 0 &&
@@ -272,44 +280,113 @@ end
     kn
 end
 
-function rand(rng::AbstractRNG, sp::SamplerSimple{<:FisherYates})
-    inds = sp.data
+function fy_rand(rng::AbstractRNG, inds, a)
     @inbounds begin
-        k = inds[end] # contains the index in inds where the index in sp[].a is located
+        k = inds[end] # contains the index in inds where the index in a is located
         if k <= 0
             k = fy_initialize!(rng, inds, k)
         end
         inds[end] = k - 1
-        sp[].a[inds[k]]
+        a[inds[k]]
     end
 end
 
+rand(rng::AbstractRNG, sp::SamplerFisherYates) = fy_rand(rng, sp.inds, sp.a)
 
-## SelfAvoid
+
+### SelfAvoid
 
 # cf. `self_avoid_sample!` in StatsBase.jl
 
 struct SelfAvoid{T,A} <: Distribution{T}
     a::A
 
-    SelfAvoid(a::AbstractArray{T,N}) where {T,N} =
+    SelfAvoid(a::AbstractArray{T}) where {T} =
         new{T,typeof(a)}(a)
 end
 
-Sampler(RNG::Type{<:AbstractRNG}, sa::SelfAvoid, ::Repetition) =
-    SamplerSimple(sa, (seen = Set{Int}(),
-                       idx  = Sampler(RNG, Base.OneTo(length(sa.a)), Val(Inf))))
+struct SamplerSelfAvoid{T,A,S} <: Sampler{T}
+    a::A
+    seen::Set{Int}
+    idx::S
+end
 
-reset!(sp::SamplerSimple{<:SelfAvoid}, _=0) = (empty!(sp.data.seen); sp)
+sa_idx(::Type{RNG}, a) where {RNG} = Sampler(RNG, Base.OneTo(length(a)), Val(Inf))
 
-function rand(rng::AbstractRNG, sp::SamplerSimple{<:SelfAvoid{T}})::T where T
-    seen = sp.data.seen
-    idx = sp.data.idx
+function Sampler(RNG::Type{<:AbstractRNG}, sa::SelfAvoid{T,A}, ::Repetition) where {T,A}
+    idx  = sa_idx(RNG, sa.a)
+    SamplerSelfAvoid{T,A,typeof(idx)}(sa.a, Set{Int}(), idx)
+end
+
+sa_reset!(sp) = empty!(sp.seen)
+
+reset!(sp::SamplerSelfAvoid, _=0) = (sa_reset!(sp); sp)
+
+function sa_rand(rng::AbstractRNG, sp::Sampler{T})::T where T
+    seen = sp.seen
+    idx = sp.idx
     while true
         i = rand(rng, idx)
         if !(i in seen)
             push!(seen, i)
-            return @inbounds sp[].a[i]
+            return @inbounds sp.a[i]
         end
+    end
+end
+
+rand(rng::AbstractRNG, sp::SamplerSelfAvoid) = sa_rand(rng, sp)
+
+
+## Shuffle
+
+struct Shuffle{T,A} <: Distribution{T}
+    a::A
+
+    Shuffle(a::AbstractArray{T}) where {T} = new{T,typeof(a)}(a)
+end
+
+mutable struct SamplerShuffle{T,A,S<:Sampler} <: Sampler{T}
+    a::A
+    alg::Int
+    idx::S
+    seen::Set{Int}
+    inds::Vector{Int}
+
+    SamplerShuffle(a::AbstractArray{T}, idx::S) where {T,S} =
+        new{T,typeof(a),S}(a, 0, idx)
+end
+
+Sampler(::Type{RNG}, sh::Shuffle, n::Repetition) where {RNG<:AbstractRNG} =
+    SamplerShuffle(sh.a, sa_idx(RNG, sh.a))
+
+function reset!(sp::SamplerShuffle, n=-1)
+    na = length(sp.a)
+    if n < 0
+        n = na
+    end
+    if na < n * 24 # TODO: do benchmarks
+        if !isdefined(sp, :inds)
+            sp.inds = fy_inds(sp.a)
+        end
+        fy_reset!(sp.inds, n)
+        sp.alg = 3
+    else
+        if !isdefined(sp, :seen)
+            sp.seen = Set{Int}()
+        end
+        sa_reset!(sp)
+        sp.alg = 4
+    end
+    sp
+end
+
+function rand(rng::AbstractRNG, sp::SamplerShuffle)
+    alg = sp.alg
+    if alg == 3
+        fy_rand(rng, sp.inds, sp.a)
+    elseif alg == 4
+        sa_rand(rng, sp)
+    else
+        rand(rng, reset!(sp))
     end
 end

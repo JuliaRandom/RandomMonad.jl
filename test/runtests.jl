@@ -279,7 +279,7 @@ end
     @test allunique(rand(u, 2))
 end
 
-@testset "$ShuffleAlgo" for ShuffleAlgo = (FisherYates, SelfAvoid)
+@testset "$ShuffleAlgo" for ShuffleAlgo = (FisherYates, SelfAvoid, Shuffle)
     u = ShuffleAlgo(1:3)
     @test eltype(u) == Int
     @test rand(u) ∈ 1:3

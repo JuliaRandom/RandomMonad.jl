@@ -308,6 +308,15 @@ end
     # test Val(1)-sampler works
     s = Random.Sampler(MersenneTwister, ShuffleAlgo(1:9), Val(1))
     @test allunique(rand(s, 9))
+
+    # old bug with FisherYates
+    @test counts(Map(Fill(Fill(ShuffleAlgo(1:9), 1), 4)) do xs
+                     for i = 1:length(xs[1])
+                         all(x -> x[i] == xs[1][i], xs) && return true
+                     end
+                     false
+                 end,
+                 1000)[false] > 995
 end
 
 ## containers

@@ -258,6 +258,7 @@ end
     k == 0 &&
         throw(ArgumentError("FisherYates: all elements have been consumed"))
     n = length(inds) - 1
+    kn = n
     copyto!(inds, 1:n)
     m = n + k
     mask = nextpow(2, n) - 1
@@ -268,6 +269,7 @@ end
         @inbounds inds[i], inds[n] = inds[n], inds[i]
         n -= 1
     end
+    kn
 end
 
 function rand(rng::AbstractRNG, sp::SamplerSimple{<:FisherYates})
@@ -275,8 +277,7 @@ function rand(rng::AbstractRNG, sp::SamplerSimple{<:FisherYates})
     @inbounds begin
         k = inds[end] # contains the index in inds where the index in sp[].a is located
         if k <= 0
-            fy_initialize!(rng, inds, k)
-            k = -k
+            k = fy_initialize!(rng, inds, k)
         end
         inds[end] = k - 1
         sp[].a[inds[k]]

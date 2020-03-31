@@ -246,22 +246,38 @@ struct FisherYates{T,N,A} <: Distribution{T}
         new{T,N,typeof(a)}(a)
 end
 
-Sampler(RNG::Type{<:AbstractRNG}, fy::FisherYates, ::Repetition) =
-    reset!(SamplerSimple(fy, Vector{Int}(undef, length(fy.a))))
+Sampler(::Type{RNG}, fy::FisherYates, ::Repetition) where {RNG<:AbstractRNG} =
+    reset!(SamplerSimple(fy, Vector{Int}(undef, length(fy.a) + 1)))
 
-function reset!(sp::SamplerSimple{<:FisherYates}, _=0)
-    copy!(sp.data, 1:length(sp[].a))
+function reset!(sp::SamplerSimple{<:FisherYates}, n=length(sp[].a))
+    @inbounds sp.data[end] = -n # < 0 means not yet initialized
     sp
+end
+
+@noinline function fy_initialize!(rng, inds, k)
+    k == 0 &&
+        throw(ArgumentError("FisherYates: all elements have been consumed"))
+    n = length(inds) - 1
+    copyto!(inds, 1:n)
+    m = n + k
+    while n != m
+        i = rand(rng, 1:n)
+        @inbounds inds[i], inds[n] = inds[n], inds[i]
+        n -= 1
+    end
 end
 
 function rand(rng::AbstractRNG, sp::SamplerSimple{<:FisherYates})
     inds = sp.data
-    n = length(inds)
-    i = rand(rng, 1:n)
-    @inbounds x = inds[i]
-    @inbounds inds[i] = inds[end]
-    resize!(inds, n-1)
-    @inbounds sp[].a[x]
+    @inbounds begin
+        k = inds[end] # contains the index in inds where the index in sp[].a is located
+        if k <= 0
+            fy_initialize!(rng, inds, k)
+            k = -k
+        end
+        inds[end] = k - 1
+        sp[].a[inds[k]]
+    end
 end
 
 

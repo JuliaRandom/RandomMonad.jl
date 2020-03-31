@@ -260,8 +260,11 @@ end
     n = length(inds) - 1
     copyto!(inds, 1:n)
     m = n + k
+    mask = nextpow(2, n) - 1
     while n != m
-        i = rand(rng, 1:n)
+        (mask >> 1) == n && (mask >>= 1)
+        i = 1 + rand(rng, Random.ltm52(n, mask))
+        #^^^ faster equivalent to i = rand(rng, 1:n) (cf. Base.shuffle!)
         @inbounds inds[i], inds[n] = inds[n], inds[i]
         n -= 1
     end

@@ -307,6 +307,10 @@ end
 
     # test reset!(sp, 1) works
     @test all(in(1:4), vcat(rand(Fill(ShuffleAlgo(1:4), 1), 10)...))
+    # test reset!(sp, 2) works
+    @test all(rand(Fill(ShuffleAlgo(1:4), 2), 100)) do x
+        x[1] != x[2]
+    end
 
     # test Val(1)-sampler works
     s = Random.Sampler(MersenneTwister, ShuffleAlgo(1:9), Val(1))

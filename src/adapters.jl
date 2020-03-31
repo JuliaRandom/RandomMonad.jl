@@ -364,8 +364,8 @@ function reset!(sp::SamplerShuffle, n=-1)
     if n < 0
         n = na
     end
-    if n == 1
-        sp.alg = 1
+    if n < 3
+        sp.alg = typemin(Int)
     elseif na < n * 24 # TODO: do benchmarks
         if !isdefined(sp, :inds)
             sp.inds = fy_inds(sp.a)
@@ -384,8 +384,14 @@ end
 
 function rand(rng::AbstractRNG, sp::SamplerShuffle)
     alg = sp.alg
-    if alg == 1
-        @inbounds sp.a[rand(rng, sp.idx)]
+    if alg < 0
+        local i
+        while true
+            i = rand(rng, sp.idx)
+            -i != alg && break
+        end
+        sp.alg = -i
+        return @inbounds sp.a[i]
     elseif alg == 3
         fy_rand(rng, sp.inds, sp.a)
     elseif alg == 4

@@ -163,36 +163,36 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Filter}) =
     end
 
 
-## Map
+## Lift
 
-struct Map{T,F,D} <: Distribution{T}
+struct Lift{T,F,D} <: Distribution{T}
     f::F
     d::D
 end
 
-Map{T}(f::F, d...) where {T,F} = Map{T,F,typeof(d)}(f, d)
+Lift{T}(f::F, d...) where {T,F} = Lift{T,F,typeof(d)}(f, d)
 
-function Map(f::F, d...) where {F}
+function Lift(f::F, d...) where {F}
     rt = Base.return_types(f, map(gentype, d))
     T = length(rt) > 1 ? Any : rt[1]
-    Map{T}(f, d...)
+    Lift{T}(f, d...)
 end
 
 
 ### sampling
 
 # Repetition -> Val(1)
-rand(rng::AbstractRNG, sp::SamplerTrivial{<:Map{T}}) where {T} =
+rand(rng::AbstractRNG, sp::SamplerTrivial{<:Lift{T}}) where {T} =
     convert(T, sp[].f((rand(rng, d) for d in sp[].d)...))
 
-Sampler(RNG::Type{<:AbstractRNG}, m::Map, n::Val{Inf}) =
+Sampler(RNG::Type{<:AbstractRNG}, m::Lift, n::Val{Inf}) =
     SamplerTag{typeof(m)}((f = m.f,
                            d = map(x -> Sampler(RNG, x, n), m.d)))
 
-reset!(sp::SamplerTag{<:Map}, n=0) =
+reset!(sp::SamplerTag{<:Lift}, n=0) =
     (foreach(s -> reset!(s, n), sp.data.d); sp)
 
-rand(rng::AbstractRNG, sp::SamplerTag{<:Map{T}}) where {T} =
+rand(rng::AbstractRNG, sp::SamplerTag{<:Lift{T}}) where {T} =
     convert(T, sp.data.f((rand(rng, d) for d in sp.data.d)...))
 
 
@@ -206,7 +206,7 @@ end
 Reduce{T}(f::F, d) where {T,F} = Reduce{T,F,typeof(d)}(f, d)
 
 # we only support reduce for f(::X, ::X) -> X
-# use Map + Base.reduce for more complicated cases
+# use Lift + Base.reduce for more complicated cases
 Reduce(f::F, d) where {F} = Reduce{eltype(gentype(d))}(f, d)
 
 

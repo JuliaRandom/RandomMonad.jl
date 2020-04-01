@@ -3,7 +3,7 @@ module RandomMonad
 export Distribution
 
 export Bernoulli, Bind, Binomial, Categorical, CloseClose, CloseOpen, Const,
-       counts, Counts, Exponential, Fill, Filter, FisherYates, Map,
+       counts, Counts, Exponential, Fill, Filter, FisherYates, Lift,
        MixtureModel, Multinomial, Normal, OpenClose, OpenOpen, Poisson, Reduce,
        SelfAvoid, Shuffle, Uniform, Unique, Zip
 

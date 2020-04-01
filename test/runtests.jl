@@ -229,14 +229,14 @@ end
     @test all(x -> 1 <= x <= 9, rand(d, 1000))
 end
 
-@testset "Map" begin
-    d = Map(x -> 2x, 1:3)
+@testset "Lift" begin
+    d = Lift(x -> 2x, 1:3)
     @test rand(d) ∈ 2:2:6
     @test all(x -> x ∈ 2:2:6, rand(d, 100))
     @test eltype(d) == Int
     @test rand(d) isa Int
 
-    d = Map{Float64}(x -> x > 0, Normal())
+    d = Lift{Float64}(x -> x > 0, Normal())
     @test rand(d) isa Float64
     @test all(x -> x ∈ (0.0, 1.0), rand(d, 100))
 end
@@ -285,8 +285,8 @@ end
     for i=1:3
         rz = rand(z)
         for a = (rand(Fill(u, 3)), first.(rz), last.(rz),
-                 rand(Fill(Map(identity, u), 3)),
-                 rand(Fill(Map(+, (0,), u), 3)),
+                 rand(Fill(Lift(identity, u), 3)),
+                 rand(Fill(Lift(+, (0,), u), 3)),
                  rand(Filter(x->true, u)))
             @test all(in(1:3), a)
             @test allunique(a)
@@ -335,11 +335,11 @@ end
     @test allunique(rand(s, 9))
 
     # old bug with FisherYates
-    @test counts(Map(Fill(Fill(ShuffleAlgo(1:9), 1), 4)) do xs
-                     for i = 1:length(xs[1])
-                         all(x -> x[i] == xs[1][i], xs) && return true
-                     end
-                     false
+    @test counts(Lift(Fill(Fill(ShuffleAlgo(1:9), 1), 4)) do xs
+                      for i = 1:length(xs[1])
+                          all(x -> x[i] == xs[1][i], xs) && return true
+                      end
+                      false
                  end,
                  1000)[false] > 995
 end

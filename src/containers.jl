@@ -49,4 +49,20 @@ Sampler(RNG::Type{<:AbstractRNG}, f::Fill, n::Repetition) =
                            dims = f.dims))
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Fill}) =
-    rand(rng, reset!(sp.data.x, prod(sp.data.dims)), sp.data.dims)
+    rand!(rng, gentype(sp)(undef, sp.data.dims), sp, Val(1))
+
+function rand!(rng::AbstractRNG, a::AbstractArray, sp::SamplerTag{<:Fill}, ::Val{1})
+    dims = sp.data.dims
+    if dims != size(a)
+        if length(dims) == 1 && a isa AbstractVector
+            resize!(a, dims[1])
+        else
+            throw(ArgumentError("can not resize destination array"))
+        end
+    end
+    x = reset!(sp.data.x, prod(dims))
+    for i in eachindex(a)
+        @inbounds a[i] = rand(rng, x)
+    end
+    return a
+end

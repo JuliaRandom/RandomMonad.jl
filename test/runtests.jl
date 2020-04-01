@@ -1,5 +1,5 @@
 using Test
-using Random: Random, MersenneTwister
+using Random: Random, MersenneTwister, rand!
 using RandomMonad
 
 @testset "Uniform" begin
@@ -345,13 +345,22 @@ end
 end
 
 @testset "Fill" begin
+    rng = MersenneTwister()
     for f in (Fill(1:9, (2, 3)),
               Fill(Uniform(1:9), 2, 3))
         @test f isa Distribution{Array{Int,2}}
         a = rand(f)
-        @test a isa Array{Int,2}
-        @test size(a) == (2, 3)
-        @test all(x -> x ∈ 1:9, a)
+        b = similar(a)
+        rand!(rng, b, f, Val(1))
+        c = similar(a)
+        rand!(c, f, Val(1))
+        for A = (a, b, c)
+            @test A isa Array{Int,2}
+            @test size(A) == (2, 3)
+            @test all(x -> x ∈ 1:9, A)
+        end
+        @test_throws ArgumentError rand!(similar(a, 3, 2), f, Val(1))
+        @test_throws ArgumentError rand!(similar(a, 6), f, Val(1))
     end
     f = Fill(Float64)
     @test rand(f) isa Array{Float64,0}
@@ -359,4 +368,9 @@ end
     a = rand(f)
     @test a isa Array{Float64,2}
     @test size(a) == (2, 3)
+    f = Fill(1:9, 9)
+    a = rand!(Int8[], f, Val(1))
+    @test a isa Vector{Int8}
+    @test length(a) == 9
+    @test all(in(1:9), a)
 end

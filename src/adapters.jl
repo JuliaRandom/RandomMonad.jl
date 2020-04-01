@@ -321,7 +321,7 @@ struct FisherYates{T,A} <: Distribution{T}
         new{T,typeof(a)}(a)
 end
 
-struct SamplerFisherYates{T,A} <: Sampler{T}
+struct SamplerFisherYates{T,A} <: SamplerReset{T}
     a::A
     inds::Vector{Int}
 end
@@ -378,7 +378,7 @@ struct SelfAvoid{T,A} <: Distribution{T}
         new{T,typeof(a)}(a)
 end
 
-struct SamplerSelfAvoid{T,A,S} <: Sampler{T}
+struct SamplerSelfAvoid{T,A,S} <: SamplerReset{T}
     a::A
     seen::Set{Int}
     idx::S
@@ -418,7 +418,7 @@ struct Shuffle{T,A} <: Distribution{T}
     Shuffle(a::AbstractArray{T}) where {T} = new{T,typeof(a)}(a)
 end
 
-mutable struct SamplerShuffle{T,A,S<:Sampler} <: Sampler{T}
+mutable struct SamplerShuffle{T,A,S<:Sampler} <: SamplerReset{T}
     a::A
     alg::Int
     idx::S

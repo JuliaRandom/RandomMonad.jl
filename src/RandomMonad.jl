@@ -7,8 +7,7 @@ export Bernoulli, Bind, Binomial, Categorical, CloseClose, CloseOpen, Const,
        MixtureModel, Multinomial, Normal, OpenClose, OpenOpen, Poisson, Reduce,
        SelfAvoid, Shuffle, Uniform, Unique, Zip
 
-using Random: AbstractRNG, gentype, randexp, randn, Random, Repetition,
-      SamplerSimple, SamplerTag, SamplerTrivial
+using Random: AbstractRNG, gentype, randexp, randn, Random, Repetition
 
 import Random: rand, rand!, Sampler
 
@@ -43,10 +42,13 @@ for the case `rep == Val(Inf)`.
 
 This function should be called in each function generating a collection of
 objects generated from a given sampler `sp`. As a notable exception,
-`rand!(::AbstractRNG, ::Array, ::Sampler)` does not follow this rule, as it is
-defined in `Random`. Therefore, samplers having a non-trivial `reset!` should
-not assume that this function will be called (one easy way to handle that is to
-call `reset!` at construction time).
+`rand!(::AbstractRNG, ::AbstractArray, ::Sampler)` does not follow this rule,
+as it is defined in `Random`. Therefore, samplers having a non-trivial `reset!`
+should not assume that this function will be called (one easy way to handle
+that is to call `reset!` at construction time).
+However, a similar method `rand!(::AbstractRNG, ::AbstractArray, ::SamplerReset)`
+is defined, which does call `reset!`. It is recommended that samplers with a
+non-trivial `reset!` inherit from `SamplerReset`.
 """
 reset!(sp::Sampler, _ = 0) = sp
 
@@ -87,8 +89,30 @@ rand!(rng::AbstractRNG, A::AbstractArray, X::Distribution, ::Val{1}) =
 rand!(A::AbstractArray, X::Distribution, ::Val{1}) = rand!(Random.GLOBAL_RNG, A, X, Val(1))
 
 
+## SamplerReset
+
+"""
+    abstract type SamplerReset{T} <: Sampler{T} end
+
+`SamplerReset` is meant to be as general as `Sampler`, but with the explicit
+indication that `reset!` might be non-trivial.
+In particular, `rand!([rng], a::AbstractArray, sp::SamplerReset)` is specialized
+(including a call to `reset!(sp, length(a))` before populating `a`).
+"""
+abstract type SamplerReset{T} <: Sampler{T} end
+
+function rand!(rng::AbstractRNG, A::AbstractArray, sp::SamplerReset)
+    reset!(sp, length(A))
+    for i in eachindex(A)
+        @inbounds A[i] = rand(rng, sp)
+    end
+    A
+end
+
+
 ## includes
 
+include("samplerhelpers.jl")
 include("distributions.jl")
 include("floatintervals.jl")
 include("containers.jl")

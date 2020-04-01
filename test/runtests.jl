@@ -227,6 +227,14 @@ end
     @test 620 < count(==(2), rand(d, 1000)) < 780
     d = Filter(x -> x < 9, 1:20)
     @test all(x -> 1 <= x <= 9, rand(d, 1000))
+
+    # reset!
+    s = Random.Sampler(MersenneTwister, Filter(x -> x < 5, Shuffle(1:9)))
+    for _ = 1:3
+        a = rand(s, 4)
+        @test allunique(a)
+        @test all(x -> x < 5, a)
+    end
 end
 
 @testset "Lift" begin
@@ -347,6 +355,17 @@ end
                       false
                  end,
                  1000)[false] > 995
+
+    # compatibility with rand!
+    s = Random.Sampler(MersenneTwister, ShuffleAlgo(1:4))
+    # when rand(s, 4) is called in a loop, we test that `reset!(s, 4)`
+    # is called each time; otherwise, `s` would get exhausted after
+    # the first call and an exception would be thrown
+    for _ = 1:3
+        a = rand(s, 4)
+        @test all(in(1:4), a)
+        @test allunique(a)
+    end
 end
 
 ## containers

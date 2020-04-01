@@ -371,7 +371,7 @@ end
                       end
                       false
                  end,
-                 1000)[false] > 995
+                 1000)[false] > 990 # would fail probably less than once in 30000
 
     # compatibility with rand!
     s = Random.Sampler(MersenneTwister, ShuffleAlgo(1:4))

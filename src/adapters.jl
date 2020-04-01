@@ -51,6 +51,9 @@ end
 Op2(::typeof(getindex), a::A, b::B) where {A,B} =
     Op2{eltype(gentype(a))}(getindex, a, b)
 
+Op2(::typeof(getindex), a::A, b::B) where {A<:Distribution{<:AbstractDict},B} =
+    Op2{valtype(gentype(a))}(getindex, a, b)
+
 """
     getindex(X::Distribution, Y::Distribution) :: Distribution
 

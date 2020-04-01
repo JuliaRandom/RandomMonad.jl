@@ -199,6 +199,8 @@ end
     # getindex
     g = Const('a':'z')[Categorical(3)]
     @test rand(g) ∈ 'a':'c'
+    g = Const(Dict(1=>3, 2=>4))[Uniform(1:2)]
+    @test rand(g) ∈ 3:4
 end
 
 @testset "Bind" begin

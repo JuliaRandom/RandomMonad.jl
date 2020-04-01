@@ -239,6 +239,11 @@ end
     d = Lift{Float64}(x -> x > 0, Normal())
     @test rand(d) isa Float64
     @test all(x -> x ∈ (0.0, 1.0), rand(d, 100))
+
+    d = Lift(+, Float64, [10, 20])
+    @test all(rand(d, 30)) do x
+        10 <= x < 11 || 20 <= x < 21
+    end
 end
 
 @testset "Reduce" begin

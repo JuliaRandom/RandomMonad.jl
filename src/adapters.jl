@@ -138,31 +138,6 @@ function rand(rng::AbstractRNG, sp::SamplerTag{<:Bind})
 end
 
 
-## Filter
-
-struct Filter{T,F,D<:Distribution{T}} <: Distribution{T}
-    f::F
-    d::D
-end
-
-Filter(f::F, d) where {F} = Filter(f, Uniform(d))
-
-
-### sampling
-
-Sampler(RNG::Type{<:AbstractRNG}, d::Filter, n::Repetition) =
-    SamplerTag{typeof(d)}((f = d.f,
-                           d = Sampler(RNG, d.d, n)))
-
-reset!(sp::SamplerTag{<:Filter}, n=0) = (reset!(sp.data.d, n); sp)
-
-rand(rng::AbstractRNG, sp::SamplerTag{<:Filter}) =
-    while true
-        x = rand(rng, sp.data.d)
-        sp.data.f(x) && return x
-    end
-
-
 ## Lift
 
 struct Lift{T,F,D} <: Distribution{T}
@@ -189,11 +164,36 @@ Sampler(RNG::Type{<:AbstractRNG}, m::Lift, n::Val{Inf}) =
     SamplerTag{typeof(m)}((f = m.f,
                            d = map(x -> Sampler(RNG, x, n), m.d)))
 
-reset!(sp::SamplerTag{<:Lift}, n=0) =
-    (foreach(s -> reset!(s, n), sp.data.d); sp)
+reset!(sp::SamplerTag{<:Lift}, n...) =
+    (foreach(s -> reset!(s, n...), sp.data.d); sp)
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Lift{T}}) where {T} =
     convert(T, sp.data.f((rand(rng, d) for d in sp.data.d)...))
+
+
+## Filter
+
+struct Filter{T,F,D<:Distribution{T}} <: Distribution{T}
+    f::F
+    d::D
+end
+
+Filter(f::F, d) where {F} = Filter(f, Uniform(d))
+
+
+### sampling
+
+Sampler(RNG::Type{<:AbstractRNG}, d::Filter, n::Repetition) =
+    SamplerTag{typeof(d)}((f = d.f,
+                           d = Sampler(RNG, d.d, n)))
+
+reset!(sp::SamplerTag{<:Filter}, n=0) = (reset!(sp.data.d, n); sp)
+
+rand(rng::AbstractRNG, sp::SamplerTag{<:Filter}) =
+    while true
+        x = rand(rng, sp.data.d)
+        sp.data.f(x) && return x
+    end
 
 
 ## Reduce

@@ -219,6 +219,23 @@ end
     @test all(v -> eltype(v) ∈ [Bool, Float64, Int], vs)
 end
 
+@testset "Lift" begin
+    d = Lift(x -> 2x, 1:3)
+    @test rand(d) ∈ 2:2:6
+    @test all(x -> x ∈ 2:2:6, rand(d, 100))
+    @test eltype(d) == Int
+    @test rand(d) isa Int
+
+    d = Lift{Float64}(x -> x > 0, Normal())
+    @test rand(d) isa Float64
+    @test all(x -> x ∈ (0.0, 1.0), rand(d, 100))
+
+    d = Lift(+, Float64, [10, 20])
+    @test all(rand(d, 30)) do x
+        10 <= x < 11 || 20 <= x < 21
+    end
+end
+
 @testset "Filter" begin
     d = Filter(x -> x > 0, Normal())
     @test all(x -> x > 0, rand(d, 1000))
@@ -234,23 +251,6 @@ end
         a = rand(s, 4)
         @test allunique(a)
         @test all(x -> x < 5, a)
-    end
-end
-
-@testset "Lift" begin
-    d = Lift(x -> 2x, 1:3)
-    @test rand(d) ∈ 2:2:6
-    @test all(x -> x ∈ 2:2:6, rand(d, 100))
-    @test eltype(d) == Int
-    @test rand(d) isa Int
-
-    d = Lift{Float64}(x -> x > 0, Normal())
-    @test rand(d) isa Float64
-    @test all(x -> x ∈ (0.0, 1.0), rand(d, 100))
-
-    d = Lift(+, Float64, [10, 20])
-    @test all(rand(d, 30)) do x
-        10 <= x < 11 || 20 <= x < 21
     end
 end
 

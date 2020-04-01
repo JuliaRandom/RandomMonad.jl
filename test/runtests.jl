@@ -236,6 +236,23 @@ end
     end
 end
 
+@testset "Map" begin
+    d = Map(x -> 2x, Fill(1:3, 3))
+    @test all(∈(2:2:6), rand(d))
+    @test all(x -> all(∈(2:2:6), x), rand(d, 10))
+    @test eltype(d) == Vector{Int}
+    @test rand(d) isa Vector{Int}
+
+    d = Map{Vector{Float64}}(x -> x > 0, Fill(Normal(), 10))
+    @test rand(d) isa Vector{Float64}
+    @test all(x -> all(∈((0.0, 1.0)), x), rand(d, 5))
+
+    d = Map(+, Fill(Float64, 2), Fill([10, 20], 2))
+    @test all(rand(d)) do x
+        10 <= x < 11 || 20 <= x < 21
+    end
+end
+
 @testset "Filter" begin
     d = Filter(x -> x > 0, Normal())
     @test all(x -> x > 0, rand(d, 1000))

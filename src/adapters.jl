@@ -171,6 +171,57 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Lift{T}}) where {T} =
     convert(T, sp.data.f((rand(rng, d) for d in sp.data.d)...))
 
 
+## Map
+
+"""
+    Map(f, D...)
+
+Given distributions `D...` yielding collections `d...`, create a distribution
+yielding `map(f, d...)`.
+
+!!! note
+    `Map(f, D...)` is semantically equivalent to `Lift(map, Const(f), D...)`.
+
+# Examples
+```julia
+julia> rand(Map(+, Fill(0:10:20, 4), Fill(Normal(), 4)))
+4-element Array{Float64,1}:
+ 20.51571632364027
+ 10.458305495441273
+  0.24391036203770697
+ 18.700973042033308
+```
+"""
+struct Map{T,F,D} <: Distribution{T}
+    f::F
+    d::D
+end
+
+Map{T}(f::F, d...) where {T,F} = Map{T,F,typeof(d)}(f, d)
+
+function Map(f::F, d...) where {F}
+    rt = Base.return_types(map, (F, map(gentype, d)...))
+    T = length(rt) > 1 ? Any : rt[1]
+    Map{T}(f, d...)
+end
+
+
+### sampling
+
+rand(rng::AbstractRNG, sp::SamplerTrivial{<:Map{T}}) where {T} =
+    convert(T, map(sp[].f, (rand(rng, d) for d in sp[].d)...))
+
+Sampler(RNG::Type{<:AbstractRNG}, m::Map, n::Val{Inf}) =
+    SamplerTag{typeof(m)}((f = m.f,
+                           d = map(x -> Sampler(RNG, x, n), m.d)))
+
+reset!(sp::SamplerTag{<:Map}, n...) =
+    (foreach(s -> reset!(s, n...), sp.data.d); sp)
+
+rand(rng::AbstractRNG, sp::SamplerTag{<:Map{T}}) where {T} =
+    convert(T, map(sp.data.f, (rand(rng, d) for d in sp.data.d)...))
+
+
 ## Filter
 
 struct Filter{T,F,D<:Distribution{T}} <: Distribution{T}

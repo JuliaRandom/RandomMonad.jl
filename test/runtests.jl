@@ -201,6 +201,24 @@ end
     @test rand(g) ∈ 'a':'c'
 end
 
+@testset "Bind" begin
+    b = Bind(n -> Fill(Bool, n), 1:5)
+    @test eltype(b) == Vector{Bool}
+    @test rand(b) isa Vector{Bool}
+    for v in rand(b, 4)
+        @test v isa Vector{Bool}
+        @test length(v) in 1:5
+    end
+
+    b = Bind(Zip([Bool, Normal(), 1:9], Shuffle(1:4))) do (t, n)
+               Fill(t, n)
+           end
+    vs = rand(b, 4)
+    @test allunique(length.(vs))
+    @test all(v -> length(v) ∈ 1:4, vs)
+    @test all(v -> eltype(v) ∈ [Bool, Float64, Int], vs)
+end
+
 @testset "Filter" begin
     d = Filter(x -> x > 0, Normal())
     @test all(x -> x > 0, rand(d, 1000))

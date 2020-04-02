@@ -194,13 +194,13 @@ end
 
 ## adapters
 
-@testset "Const" begin
-    @test rand(Const(1)) === 1
-    @test rand(Const(1:3)) === 1:3
-    @test eltype(Const(1:3)) == UnitRange{Int}
+@testset "Pure" begin
+    @test rand(Pure(1)) === 1
+    @test rand(Pure(1:3)) === 1:3
+    @test eltype(Pure(1:3)) == UnitRange{Int}
     s = Set([1, 2, 3])
-    @test rand(Const(s)) === s
-    a = rand(Const(s), 9)
+    @test rand(Pure(s)) === s
+    a = rand(Pure(s), 9)
     @test eltype(a) == Set{Int}
     @test all(x -> x === s, a)
 end
@@ -228,9 +228,9 @@ end
     @test all(==(1:9), sort!.(rand(Fill(Unique(1:9) + Uniform(0:0), 9), 2)))
 
     # getindex
-    g = Const('a':'z')[Categorical(3)]
+    g = Pure('a':'z')[Categorical(3)]
     @test rand(g) ∈ 'a':'c'
-    g = Const(Dict(1=>3, 2=>4))[Uniform(1:2)]
+    g = Pure(Dict(1=>3, 2=>4))[Uniform(1:2)]
     @test rand(g) ∈ 3:4
 end
 

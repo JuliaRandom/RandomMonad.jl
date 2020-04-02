@@ -1,10 +1,36 @@
-## Const
+## Pure
 
-struct Const{T} <: Distribution{T}
+"""
+    Pure(x) :: Distribution{typeof{x}}
+
+Wrap `x` as a distribution always yielding `x`.
+`Pure(x)` is equivalent to the implicit distributions
+`[x]` and `(x,)`.
+
+# Examples
+```jldoctest
+julia> rand(Pure(1), 3)
+3-element Array{Int64,1}:
+ 1
+ 1
+ 1
+
+julia> rand([1], 3)
+3-element Array{Int64,1}:
+ 1
+ 1
+ 1
+```
+
+!!! note
+    The name `Pure` comes from the similar function of the "applicative"
+    Haskell typeclass.
+"""
+struct Pure{T} <: Distribution{T}
     x::T
 end
 
-rand(::AbstractRNG, sp::SamplerTrivial{<:Const}) = sp[].x
+rand(::AbstractRNG, sp::SamplerTrivial{<:Pure}) = sp[].x
 
 
 ## algebra
@@ -39,9 +65,9 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Op2{T}}) where {T} =
 
 for op = (:+, :-, :*, :/, :^)
     @eval begin
-        (Base.$op)(a::Distribution, b::Distribution) = Op2($op, a,        b)
-        (Base.$op)(a,               b::Distribution) = Op2($op, Const(a), b)
-        (Base.$op)(a::Distribution, b              ) = Op2($op, a,        Const(b))
+        (Base.$op)(a::Distribution, b::Distribution) = Op2($op, a,       b)
+        (Base.$op)(a,               b::Distribution) = Op2($op, Pure(a), b)
+        (Base.$op)(a::Distribution, b              ) = Op2($op, a,       Pure(b))
     end
 end
 
@@ -61,7 +87,7 @@ Return a distribution yielding `x[y]` where `x <- X` and `y <- Y`.
 
 # Examples
 ```julia
-julia> rand(Const('a':'z')[Uniform(1:3)])
+julia> rand(Pure('a':'z')[Uniform(1:3)])
 'b': ASCII/Unicode U+0062 (category Ll: Letter, lowercase)
 ```
 """
@@ -197,7 +223,7 @@ julia> rand(Keep(iseven, 1:9), 5)
     `Keep` is semantically equivalent to the following construction:
     ```julia
     Keep(f, X) = Bind(X) do x
-                     f(x) ? Const(x) :
+                     f(x) ? Pure(x) :
                             Keep(f, X)
                  end
     ```
@@ -234,7 +260,7 @@ Given distributions `D...` yielding collections `d...`, create a distribution
 yielding `map(f, d...)`.
 
 !!! note
-    `Map(f, D...)` is semantically equivalent to `Lift(map, Const(f), D...)`.
+    `Map(f, D...)` is semantically equivalent to `Lift(map, Pure(f), D...)`.
 
 # Examples
 ```julia

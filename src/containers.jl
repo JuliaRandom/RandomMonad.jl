@@ -51,7 +51,7 @@ Sampler(RNG::Type{<:AbstractRNG}, f::Fill, n::Repetition) =
 rand(rng::AbstractRNG, sp::SamplerTag{<:Fill}) =
     rand!(rng, gentype(sp)(undef, sp.data.dims), sp, Val(1))
 
-function rand!(rng::AbstractRNG, a::AbstractArray, sp::SamplerTag{<:Fill}, ::Val{1})
+function rand!(rng::AbstractRNG, a::AbstractArray, sp::SamplerTag{<:Fill}, ::Val{N}) where N
     dims = sp.data.dims
     if dims != size(a)
         if length(dims) == 1 && a isa AbstractVector
@@ -62,7 +62,11 @@ function rand!(rng::AbstractRNG, a::AbstractArray, sp::SamplerTag{<:Fill}, ::Val
     end
     x = reset!(sp.data.x, prod(dims))
     for i in eachindex(a)
-        @inbounds a[i] = rand(rng, x)
+        if N == 1
+            @inbounds a[i] = rand(rng, x)
+        else
+            @inbounds rand!(rng, a[i], x, Val(N-1))
+        end
     end
     return a
 end

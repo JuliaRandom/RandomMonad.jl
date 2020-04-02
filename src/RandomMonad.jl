@@ -83,10 +83,11 @@ Stacktrace:
 [...]
 ```
 """
-rand!(rng::AbstractRNG, A::AbstractArray, X::Distribution, ::Val{1}) =
-    rand!(rng, A, Sampler(rng, X), Val(1))
+rand!(rng::AbstractRNG, A::AbstractArray, X::Distribution, ::Val{N}) where {N} =
+    rand!(rng, A, Sampler(rng, X), Val(N))
 
-rand!(A::AbstractArray, X::Distribution, ::Val{1}) = rand!(Random.GLOBAL_RNG, A, X, Val(1))
+rand!(A::AbstractArray, X::Distribution, ::Val{N}) where {N} =
+    rand!(Random.GLOBAL_RNG, A, X, Val(N))
 
 
 ## SamplerReset

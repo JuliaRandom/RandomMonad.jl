@@ -434,4 +434,17 @@ end
     @test a isa Vector{Int8}
     @test length(a) == 9
     @test all(in(1:9), a)
+
+    # recursive rand!
+    inner = Fill(1:3, 3)
+    a = rand(Fill(inner, 4))
+    b = copy(a)
+    rand!(a, inner)
+    @test a[1] != b[1]
+    copy!(b, a)
+    rand!(a, Fill(inner, 4), Val(1))
+    @test a[1] != b[1]
+    copy!(b, a)
+    rand!(a, Fill(inner, 4), Val(2))
+    @test a[1] === b[1]
 end

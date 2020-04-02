@@ -1,4 +1,4 @@
-## Pure
+## Pure ######################################################################
 
 """
     Pure(x) :: Distribution{typeof{x}}
@@ -33,7 +33,7 @@ end
 rand(::AbstractRNG, sp::SamplerTrivial{<:Pure}) = sp[].x
 
 
-## algebra
+## algebra ###################################################################
 
 struct Op2{T,F,A,B} <: Distribution{T}
     f::F
@@ -94,7 +94,7 @@ julia> rand(Pure('a':'z')[Uniform(1:3)])
 Base.getindex(a::Distribution, b::Distribution) = Op2(getindex, a, b)
 
 
-## Bind
+## Bind ######################################################################
 
 """
     Bind(f, X)
@@ -167,8 +167,29 @@ function rand(rng::AbstractRNG, sp::SamplerTag{<:Bind})
 end
 
 
-## Lift
+## Lift ######################################################################
 
+"""
+    Lift(f, Xs...) :: Distribution
+
+Create a "lifted" version of `f` to the `Distribution` domain, which, given
+yielded values `xs...` from `Xs...`, yields `f(xs...)`.
+
+# Examples
+```julia-repl
+julia> rand(Lift(+, 0:10:20, Normal()), 5)
+5-element Array{Float64,1}:
+ -1.8066739854479257
+ 20.285455058446814
+  8.674837595869976
+  0.7620819803820099
+  9.891731903551195
+```
+
+!!! note
+    When distributions are seen as iterators, `Lift(f, Xs...)` is the iterator
+    resulting from `map`ping `f` onto `Xs...`.
+"""
 struct Lift{T,F,D} <: Distribution{T}
     f::F
     d::D

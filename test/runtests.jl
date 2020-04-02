@@ -1,32 +1,43 @@
 using Test
 using Random: Random, MersenneTwister, rand!, Sampler
 using RandomMonad
-using RandomMonad: UniformWrap
+using RandomMonad: wrap
 
 @testset "Uniform/Wrap" begin
-    for W = (Uniform, RandomMonad.wrap)
-        @test W(Float64) isa RandomMonad.UniformType
-        @test rand(W(Float64)) isa Float64
-        @test W(1:10) isa UniformWrap
-        @test rand(W(1:10)) isa Int
-        @test rand(W(1:10)) ∈ 1:10
-        @test rand(W(Int)) isa Int
-        @test W("asd") isa UniformWrap
-        @test rand(W("asd")) ∈ ['a', 's', 'd']
-        @test W(Set(1:3)) isa UniformWrap
-        @test rand(W(Set(1:3))) ∈ 1:3
-        @test W(Dict(1=>2)) isa UniformWrap
-        @test rand(W(Dict(1=>2))) == (1 => 2)
-        @test W((1, 2, 3)) isa UniformWrap
-        @test rand(W((1, 2, 3))) ∈ 1:3
+    for W = (Uniform, wrap)
+        for (dist, dest) in (Float64     => x -> 0 <= x < 1,
+                             1:10        => 1:10,
+                             Int         => typemin(Int):typemax(Int),
+                             "asd"       => ['a', 's', 'd'],
+                             Set(1:3)    => 1:3,
+                             Dict(1=>2)  => [1=>2],
+                             (1, 2, 3)   => 1:3)
+            w = W(dist)
+            if dist isa DataType
+                @test w isa RandomMonad.UniformType
+            else
+                @test w isa RandomMonad.UniformWrap
+            end
+            @test wrap(w) === w
+            if dest isa Function
+                @test dest(rand(w))
+            else
+                @test rand(w) ∈ dest
+            end
+        end
     end
+    s = Sampler(MersenneTwister, 1:3)
 
     @test_throws MethodError Uniform(1.3)
     @test_throws MethodError Uniform(max)
+    @test_throws MethodError Uniform(s)
 
-    @test RandomMonad.wrap(1.3) isa RandomMonad.Wrap
-    @test_throws ArgumentError rand(RandomMonad.wrap(1.3))
-    @test_throws ArgumentError rand(RandomMonad.wrap(max))
+    @test wrap(1.3) isa RandomMonad.Wrap
+    @test wrap(s) === s
+    d = Bernoulli()
+    @test wrap(d) === d
+    @test_throws ArgumentError rand(wrap(1.3))
+    @test_throws ArgumentError rand(wrap(max))
 end
 
 @testset "Bernoulli" begin

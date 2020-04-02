@@ -1,4 +1,4 @@
-## Zip
+## Zip #######################################################################
 
 # note: Zip(a, b...) is similar to RandomExtensions.make(Tuple, a, b...)
 
@@ -12,11 +12,12 @@ struct Zip{T,X} <: Distribution{T}
     end
 end
 
-rand(rng::AbstractRNG, sp::SamplerTrivial{<:Zip{T}}) where {T} =
-    map(x -> rand(rng, x), sp[].xs)::T
+zipsamplers(sp::SamplerTrivial{<:Zip}) = sp[].xs
 
 Sampler(::Type{RNG}, z::Zip, n::Val{Inf}) where {RNG<:AbstractRNG} =
     SamplerTag{typeof(z)}(map(x -> Sampler(RNG, x, n), z.xs))
+
+zipsamplers(sp::SamplerTag{<:Zip}) = sp.data
 
 function reset!(sp::SamplerTag{<:Zip}, n...)
     foreach(sp.data) do x
@@ -25,11 +26,25 @@ function reset!(sp::SamplerTag{<:Zip}, n...)
     sp
 end
 
-rand(rng::AbstractRNG, sp::SamplerTag{<:Zip{T}}) where {T} =
-    map(x -> rand(rng, x), sp.data)::T
+ZipSampler{T} = Union{SamplerTag{<:Zip{T}},
+                      SamplerTrivial{<:Zip{T}}}
 
+rand(rng::AbstractRNG, sp::ZipSampler{T}) where {T} =
+    map(x -> rand(rng, x), zipsamplers(sp))::T
 
-## Fill
+function rand!(rng::AbstractRNG, t::T,
+               sp::ZipSampler{S}, ::Val{N}) where N where S where T<:Tuple
+    N < 2 && throw(ArgumentError("can not mutate a tuple"))
+    fieldcount(T) != fieldcount(S) &&
+        throw(ArgumentError("tuples must have same size"))
+
+    for (x, s) in zip(t, zipsamplers(sp))
+        rand!(rng, x, s, Val(N-1))
+    end
+    t
+end
+
+## Fill ######################################################################
 
 struct Fill{X,T,N} <: Distribution{Array{T,N}}
     x::X

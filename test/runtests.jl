@@ -403,6 +403,20 @@ end
     z = Zip(1:2, Normal(), Int8)
     @test rand(z) isa Tuple{Int,Float64,Int8}
     @test all(x -> x isa Tuple{Int,Float64,Int8}, rand(z, 9))
+
+    # recursive rand!
+    z1 = Zip(Fill(1:3, 2), Fill(1:4, 3))
+    z2 = Zip(Fill(4:6, 2), Fill(5:8, 3))
+    t = rand(z1)
+    a, b = t[1][1], t[2][1]
+    rand!(t, z2, Val(2))
+    @test t[1][1] != a
+    @test t[2][1] != b
+    @test all(∈(5:8), t[2])
+    rand!([t], Fill(z1, 1), Val(3))
+    @test all(∈(1:4), t[2])
+    @test_throws ArgumentError rand!(t, Zip(1:2, 1:3), Val(1)) # can't mutate tuple
+    @test_throws ArgumentError rand!((t..., t...), z2, Val(2)) # not same size
 end
 
 @testset "Fill" begin

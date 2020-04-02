@@ -119,6 +119,7 @@ include("distributions.jl")
 include("floatintervals.jl")
 include("containers.jl")
 include("adapters.jl")
+include("sequences.jl")
 
 
 end # module

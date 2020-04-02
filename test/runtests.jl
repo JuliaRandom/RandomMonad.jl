@@ -419,21 +419,36 @@ end
 
     # multivariate
     if ShuffleAlgo == Shuffle
+        a = Char[]
+
         s = Shuffle(['a'], 0)
         @test rand(s) == Char[]
+        @test rand!(a, s, Val(1)) == Char[]
+
         s = Shuffle(['a'], 1)
         @test rand(s) == ['a']
+        @test rand!(a, s, Val(1)) == ['a']
+
         s = Shuffle(['a', 'b'], 2)
         @test sort!(rand(s)) == ['a', 'b']
+        @test sort!(rand!(a, s, Val(1))) == ['a', 'b']
+
         s = Shuffle(['a', 'b', 'c'], 3)
         @test sort!(rand(s)) == ['a', 'b', 'c']
+        @test sort!(rand!(a, s, Val(1))) == ['a', 'b', 'c']
+
         s = Shuffle(collect(randstring(100)), 50) # FisherYates
-        a = rand(s)
-        @test a isa Vector{Char}
+        v = rand(s)
+        @test v isa Vector{Char}
+        @test length(v) == 50
+        @test rand!(a, s, Val(1)) === a
         @test length(a) == 50
+
         s = Shuffle(collect(randstring(1000)), 2) # SelfAvoid
-        a = rand(s)
-        @test a isa Vector{Char}
+        v = rand(s)
+        @test v isa Vector{Char}
+        @test length(v) == 2
+        @test rand!(a, s, Val(1)) === a
         @test length(a) == 2
     end
 end

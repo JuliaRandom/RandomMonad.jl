@@ -524,49 +524,52 @@ function reset!(sp::SamplerShuffle, n...)
 end
 
 function rand(rng::AbstractRNG, sp::SamplerShuffle{T}) where T
-    if isunivariate(sp)
-        alg = sp.alg
-        if alg < 0
-            local i
-            while true
-                i = rand(rng, sp.idx)
-                -i != alg && break
-            end
-            sp.alg = -i
-            return @inbounds sp.a[i]
-        elseif alg == 3
-            fy_rand(rng, sp.inds, sp.a)
-        elseif alg == 4
-            sa_rand(rng, sp)
-        else
-            rand(rng, reset!(sp))
+    isunivariate(sp) || return rand!(rng, T(undef, sp.n), sp, Val(1))
+    alg = sp.alg
+    if alg < 0
+        local i
+        while true
+            i = rand(rng, sp.idx)
+            -i != alg && break
         end
-    else # multivariate
-        n = sp.n
-        v = T(undef, n)
-        if n < 3
-            n < 1 && return v
-            j = rand(rng, sp.idx)
-            @inbounds v[1] = sp.a[j]
-            n < 2 && return v
-            local i
-            while true
-                i = rand(rng, sp.idx)
-                i != j && break
-            end
-            @inbounds v[2] = sp.a[i]
-            return v
+        sp.alg = -i
+        return @inbounds sp.a[i]
+    elseif alg == 3
+        fy_rand(rng, sp.inds, sp.a)
+    elseif alg == 4
+        sa_rand(rng, sp)
+    else
+        rand(rng, reset!(sp))
+    end
+end
+
+function rand!(rng::AbstractRNG, v::AbstractVector, sp::SamplerShuffle{T}, ::Val{1}) where T
+    isunivariate(sp) &&
+        throw(ArgumentError("can not create vector from univariate Shuffle"))
+    n = sp.n
+    resize!(v, n)
+    if n < 3
+        n < 1 && return v
+        j = rand(rng, sp.idx)
+        @inbounds v[1] = sp.a[j]
+        n < 2 && return v
+        local i
+        while true
+            i = rand(rng, sp.idx)
+            i != j && break
         end
-        _reset!(sp, sp.n)
-        if sp.alg == 3
-            for i in eachindex(v)
-                @inbounds v[i] = fy_rand(rng, sp.inds, sp.a)
-            end
-        else # alg == 4
-            for i in eachindex(v)
-                @inbounds v[i] = sa_rand(rng, sp)
-            end
-        end
+        @inbounds v[2] = sp.a[i]
         return v
     end
+    _reset!(sp, sp.n)
+    if sp.alg == 3
+        for i in eachindex(v)
+            @inbounds v[i] = fy_rand(rng, sp.inds, sp.a)
+        end
+    else # alg == 4
+        for i in eachindex(v)
+            @inbounds v[i] = sa_rand(rng, sp)
+        end
+    end
+    return v
 end

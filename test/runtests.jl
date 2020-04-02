@@ -1,5 +1,5 @@
 using Test
-using Random: Random, MersenneTwister, rand!, Sampler
+using Random: Random, MersenneTwister, rand!, Sampler, randstring
 using RandomMonad
 using RandomMonad: wrap
 
@@ -415,6 +415,26 @@ end
         a = rand(s, 4)
         @test all(in(1:4), a)
         @test allunique(a)
+    end
+
+    # multivariate
+    if ShuffleAlgo == Shuffle
+        s = Shuffle(['a'], 0)
+        @test rand(s) == Char[]
+        s = Shuffle(['a'], 1)
+        @test rand(s) == ['a']
+        s = Shuffle(['a', 'b'], 2)
+        @test sort!(rand(s)) == ['a', 'b']
+        s = Shuffle(['a', 'b', 'c'], 3)
+        @test sort!(rand(s)) == ['a', 'b', 'c']
+        s = Shuffle(collect(randstring(100)), 50) # FisherYates
+        a = rand(s)
+        @test a isa Vector{Char}
+        @test length(a) == 50
+        s = Shuffle(collect(randstring(1000)), 2) # SelfAvoid
+        a = rand(s)
+        @test a isa Vector{Char}
+        @test length(a) == 2
     end
 end
 

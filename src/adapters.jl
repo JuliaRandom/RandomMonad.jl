@@ -449,7 +449,7 @@ sa_reset!(sp) = empty!(sp.seen)
 
 reset!(sp::SamplerSelfAvoid, _=0) = (sa_reset!(sp); sp)
 
-function sa_rand(rng::AbstractRNG, sp::Sampler{T})::T where T
+function sa_rand(rng::AbstractRNG, sp)
     seen = sp.seen
     idx = sp.idx
     while true
@@ -464,29 +464,39 @@ end
 rand(rng::AbstractRNG, sp::SamplerSelfAvoid) = sa_rand(rng, sp)
 
 
-## Shuffle
+## Shuffle ###################################################################
 
 struct Shuffle{T,A} <: Distribution{T}
     a::A
+    n::Int
 
+    # univariate constructor
     Shuffle(a::AbstractArray{T}) where {T} = new{T,typeof(a)}(a)
+
+    # multivariate constructor
+    Shuffle(a::AbstractArray{T}, n::Integer) where {T} =
+        new{Vector{T},typeof(a)}(a, n)
+
 end
 
 mutable struct SamplerShuffle{T,A,S<:Sampler} <: SamplerReset{T}
     a::A
+    n::Int
     alg::Int
     idx::S
     seen::Set{Int}
     inds::Vector{Int}
 
-    SamplerShuffle(a::AbstractArray{T}, idx::S) where {T,S} =
-        new{T,typeof(a),S}(a, 0, idx)
+    SamplerShuffle{TT}(a::AbstractArray{T}, n::Int, idx::S) where {TT,T,S} =
+        new{TT,typeof(a),S}(a, n, 0, idx)
 end
 
-Sampler(::Type{RNG}, sh::Shuffle, n::Repetition) where {RNG<:AbstractRNG} =
-    SamplerShuffle(sh.a, sa_idx(RNG, sh.a))
+Sampler(::Type{RNG}, sh::Shuffle{T}, n::Repetition) where {RNG<:AbstractRNG,T} =
+    SamplerShuffle{T}(sh.a, sh.n, sa_idx(RNG, sh.a))
 
-function reset!(sp::SamplerShuffle, n=-1)
+isunivariate(::SamplerShuffle{T,A}) where {T,A} = T === eltype(A)
+
+function _reset!(sp::SamplerShuffle, n=-1)::Int
     na = length(sp.a)
     if n < 0
         n = na
@@ -506,24 +516,57 @@ function reset!(sp::SamplerShuffle, n=-1)
         sa_reset!(sp)
         sp.alg = 4
     end
+end
+
+function reset!(sp::SamplerShuffle, n...)
+    isunivariate(sp) && _reset!(sp, n...)
     sp
 end
 
-function rand(rng::AbstractRNG, sp::SamplerShuffle)
-    alg = sp.alg
-    if alg < 0
-        local i
-        while true
-            i = rand(rng, sp.idx)
-            -i != alg && break
+function rand(rng::AbstractRNG, sp::SamplerShuffle{T}) where T
+    if isunivariate(sp)
+        alg = sp.alg
+        if alg < 0
+            local i
+            while true
+                i = rand(rng, sp.idx)
+                -i != alg && break
+            end
+            sp.alg = -i
+            return @inbounds sp.a[i]
+        elseif alg == 3
+            fy_rand(rng, sp.inds, sp.a)
+        elseif alg == 4
+            sa_rand(rng, sp)
+        else
+            rand(rng, reset!(sp))
         end
-        sp.alg = -i
-        return @inbounds sp.a[i]
-    elseif alg == 3
-        fy_rand(rng, sp.inds, sp.a)
-    elseif alg == 4
-        sa_rand(rng, sp)
-    else
-        rand(rng, reset!(sp))
+    else # multivariate
+        n = sp.n
+        v = T(undef, n)
+        if n < 3
+            n < 1 && return v
+            j = rand(rng, sp.idx)
+            @inbounds v[1] = sp.a[j]
+            n < 2 && return v
+            local i
+            while true
+                i = rand(rng, sp.idx)
+                i != j && break
+            end
+            @inbounds v[2] = sp.a[i]
+            return v
+        end
+        _reset!(sp, sp.n)
+        if sp.alg == 3
+            for i in eachindex(v)
+                @inbounds v[i] = fy_rand(rng, sp.inds, sp.a)
+            end
+        else # alg == 4
+            for i in eachindex(v)
+                @inbounds v[i] = sa_rand(rng, sp)
+            end
+        end
+        return v
     end
 end

@@ -534,10 +534,10 @@ end
     a = rand(Fill(inner, 4))
     b = copy(a)
     rand!(a, inner)
-    @test a[1] != b[1]
+    @test a[1] !== b[1]
     copy!(b, a)
     rand!(a, Fill(inner, 4), Val(1))
-    @test a[1] != b[1]
+    @test a[1] !== b[1]
     copy!(b, a)
     rand!(a, Fill(inner, 4), Val(2))
     @test a[1] === b[1]

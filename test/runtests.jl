@@ -1,12 +1,32 @@
 using Test
 using Random: Random, MersenneTwister, rand!, Sampler
 using RandomMonad
+using RandomMonad: UniformWrap
 
-@testset "Uniform" begin
-    @test rand(Uniform(Float64)) isa Float64
-    @test rand(Uniform(1:10)) isa Int
-    @test rand(Uniform(1:10)) ∈ 1:10
-    @test rand(Uniform(Int)) isa Int
+@testset "Uniform/Wrap" begin
+    for W = (Uniform, RandomMonad.wrap)
+        @test W(Float64) isa RandomMonad.UniformType
+        @test rand(W(Float64)) isa Float64
+        @test W(1:10) isa UniformWrap
+        @test rand(W(1:10)) isa Int
+        @test rand(W(1:10)) ∈ 1:10
+        @test rand(W(Int)) isa Int
+        @test W("asd") isa UniformWrap
+        @test rand(W("asd")) ∈ ['a', 's', 'd']
+        @test W(Set(1:3)) isa UniformWrap
+        @test rand(W(Set(1:3))) ∈ 1:3
+        @test W(Dict(1=>2)) isa UniformWrap
+        @test rand(W(Dict(1=>2))) == (1 => 2)
+        @test W((1, 2, 3)) isa UniformWrap
+        @test rand(W((1, 2, 3))) ∈ 1:3
+    end
+
+    @test_throws MethodError Uniform(1.3)
+    @test_throws MethodError Uniform(max)
+
+    @test RandomMonad.wrap(1.3) isa RandomMonad.Wrap
+    @test_throws ArgumentError rand(RandomMonad.wrap(1.3))
+    @test_throws ArgumentError rand(RandomMonad.wrap(max))
 end
 
 @testset "Bernoulli" begin

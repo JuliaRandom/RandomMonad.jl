@@ -114,6 +114,7 @@ end
 ## includes
 
 include("samplerhelpers.jl")
+include("wrap.jl")
 include("distributions.jl")
 include("floatintervals.jl")
 include("containers.jl")

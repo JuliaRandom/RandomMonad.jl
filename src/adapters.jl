@@ -174,6 +174,57 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Lift{T}}) where {T} =
     convert(T, sp.data.f((rand(rng, d) for d in sp.data.d)...))
 
 
+## Keep ######################################################################
+
+"""
+    Keep(f, X) :: Distribution
+
+Create a distribution yielding a subset of the values yielded by `X`, keeping
+only those for which `f` is `true`.
+
+# Examples
+```julia-repl
+julia> rand(Keep(iseven, 1:9), 5)
+5-element Array{Int64,1}:
+ 2
+ 8
+ 2
+ 8
+ 4
+```
+
+!!! note
+    `Keep` is semantically equivalent to the following construction:
+    ```julia
+    Keep(f, X) = Bind(X) do x
+                     f(x) ? Const(x) :
+                            Keep(f, X)
+                 end
+    ```
+"""
+struct Keep{T,F,D<:Distribution{T}} <: Distribution{T}
+    f::F
+    d::D
+end
+
+Keep(f::F, d) where {F} = Keep(f, Uniform(d))
+
+
+### sampling
+
+Sampler(::Type{RNG}, d::Keep, n::Repetition) where {RNG<:AbstractRNG} =
+    SamplerTag{typeof(d)}((f = d.f,
+                           d = Sampler(RNG, d.d, n)))
+
+reset!(sp::SamplerTag{<:Keep}, n=0) = (reset!(sp.data.d, n); sp)
+
+rand(rng::AbstractRNG, sp::SamplerTag{<:Keep}) =
+    while true
+        x = rand(rng, sp.data.d)
+        sp.data.f(x) && return x
+    end
+
+
 ## Map
 
 """
@@ -223,31 +274,6 @@ reset!(sp::SamplerTag{<:Map}, n...) =
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Map{T}}) where {T} =
     convert(T, map(sp.data.f, (rand(rng, d) for d in sp.data.d)...))
-
-
-## Filter
-
-struct Filter{T,F,D<:Distribution{T}} <: Distribution{T}
-    f::F
-    d::D
-end
-
-Filter(f::F, d) where {F} = Filter(f, Uniform(d))
-
-
-### sampling
-
-Sampler(RNG::Type{<:AbstractRNG}, d::Filter, n::Repetition) =
-    SamplerTag{typeof(d)}((f = d.f,
-                           d = Sampler(RNG, d.d, n)))
-
-reset!(sp::SamplerTag{<:Filter}, n=0) = (reset!(sp.data.d, n); sp)
-
-rand(rng::AbstractRNG, sp::SamplerTag{<:Filter}) =
-    while true
-        x = rand(rng, sp.data.d)
-        sp.data.f(x) && return x
-    end
 
 
 ## Reduce

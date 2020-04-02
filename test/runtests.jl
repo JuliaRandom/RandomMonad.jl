@@ -210,8 +210,8 @@ end
     @test eltype(d) == Float64
     @test all(x -> 1.0 <= x < 4, rand(d, 100))
     for op = (+, -, *, ^, /)
-        # Filter below for y^x needing x >= 0
-        for x = (Filter(x -> x >= 0, Uniform(Int32)), Int32(3))
+        # Keep below for y^x needing x >= 0
+        for x = (Keep(x -> x >= 0, Uniform(Int32)), Int32(3))
             for d = (op(x, Uniform(Int32(1):Int32(3))),
                      op(Uniform(Int32(1):Int32(3)), x))
                 if op == /
@@ -269,6 +269,24 @@ end
     end
 end
 
+@testset "Keep" begin
+    d = Keep(x -> x > 0, Normal())
+    @test all(x -> x > 0, rand(d, 1000))
+    d = Keep(x -> x < 4, Categorical([1, 7, 2, 10]))
+    # cf. Bernoulli tests
+    @test 620 < count(==(2), rand(d, 1000)) < 780
+    d = Keep(x -> x < 9, 1:20)
+    @test all(x -> 1 <= x <= 9, rand(d, 1000))
+
+    # reset!
+    s = Random.Sampler(MersenneTwister, Keep(x -> x < 5, Shuffle(1:9)))
+    for _ = 1:3
+        a = rand(s, 4)
+        @test allunique(a)
+        @test all(x -> x < 5, a)
+    end
+end
+
 @testset "Map" begin
     d = Map(x -> 2x, Fill(1:3, 3))
     @test all(∈(2:2:6), rand(d))
@@ -283,24 +301,6 @@ end
     d = Map(+, Fill(Float64, 2), Fill([10, 20], 2))
     @test all(rand(d)) do x
         10 <= x < 11 || 20 <= x < 21
-    end
-end
-
-@testset "Filter" begin
-    d = Filter(x -> x > 0, Normal())
-    @test all(x -> x > 0, rand(d, 1000))
-    d = Filter(x -> x < 4, Categorical([1, 7, 2, 10]))
-    # cf. Bernoulli tests
-    @test 620 < count(==(2), rand(d, 1000)) < 780
-    d = Filter(x -> x < 9, 1:20)
-    @test all(x -> 1 <= x <= 9, rand(d, 1000))
-
-    # reset!
-    s = Random.Sampler(MersenneTwister, Filter(x -> x < 5, Shuffle(1:9)))
-    for _ = 1:3
-        a = rand(s, 4)
-        @test allunique(a)
-        @test all(x -> x < 5, a)
     end
 end
 
@@ -350,7 +350,7 @@ end
         for a = (rand(Fill(u, 3)), first.(rz), last.(rz),
                  rand(Fill(Lift(identity, u), 3)),
                  rand(Fill(Lift(+, (0,), u), 3)),
-                 rand(Filter(x->true, u)))
+                 rand(Keep(x->true, u)))
             @test all(in(1:3), a)
             @test allunique(a)
         end

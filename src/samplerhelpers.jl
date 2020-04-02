@@ -1,5 +1,22 @@
-# we redefine (copy-paste) SamplerTrivial, SamplerSimple, SamplerTag from Random
-# so that they inherit from SamplerReset
+## sampler ###################################################################
+
+# allows to call `Sampler` only when the the arg isn't a Sampler itself
+
+sampler(::Type{RNG}, X, n::Repetition) where {RNG<:AbstractRNG} =
+    Sampler(RNG, X, n)
+
+sampler(::Type{RNG}, ::Type{X}, n::Repetition) where {RNG<:AbstractRNG,X} =
+    Sampler(RNG, X, n)
+
+sampler(::Type{RNG}, X::Sampler, n::Repetition) where {RNG<:AbstractRNG} = X
+
+sampler(rng::AbstractRNG, X, n::Repetition) = sampler(typeof(rng), X, n)
+
+
+## SamplerTrivial, SamplerSimple, SamplerTag #################################
+
+# we redefine (copy-paste) SamplerTrivial, SamplerSimple, SamplerTag from
+# Random so that they inherit from SamplerReset
 
 struct SamplerTrivial{T,E} <: SamplerReset{E}
     self::T

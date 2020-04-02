@@ -1,5 +1,5 @@
 using Test
-using Random: Random, MersenneTwister, rand!
+using Random: Random, MersenneTwister, rand!, Sampler
 using RandomMonad
 
 @testset "Uniform" begin
@@ -404,6 +404,15 @@ end
     @test rand(z) isa Tuple{Int,Float64,Int8}
     @test all(x -> x isa Tuple{Int,Float64,Int8}, rand(z, 9))
 
+    # Zip(::Sampler...)
+    s = Sampler(MersenneTwister, 1:3)
+    z = Zip(s, s)
+    @test rand(z) isa Tuple{Int,Int}
+    @test all(in(1:3), rand(z))
+    for t in rand(z, 3)
+        @test all(in(1:3), rand(z))
+    end
+
     # recursive rand!
     z1 = Zip(Fill(1:3, 2), Fill(1:4, 3))
     z2 = Zip(Fill(4:6, 2), Fill(5:8, 3))
@@ -448,6 +457,11 @@ end
     @test a isa Vector{Int8}
     @test length(a) == 9
     @test all(in(1:9), a)
+
+    # Fill(::Sampler, ...)
+    s = Sampler(MersenneTwister, 1:3)
+    f = Fill(s, 2)
+    @test all(in(1:3), rand(f))
 
     # recursive rand!
     inner = Fill(1:3, 3)

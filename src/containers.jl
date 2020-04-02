@@ -15,7 +15,7 @@ end
 zipsamplers(sp::SamplerTrivial{<:Zip}) = sp[].xs
 
 Sampler(::Type{RNG}, z::Zip, n::Val{Inf}) where {RNG<:AbstractRNG} =
-    SamplerTag{typeof(z)}(map(x -> Sampler(RNG, x, n), z.xs))
+    SamplerTag{typeof(z)}(map(x -> sampler(RNG, x, n), z.xs))
 
 zipsamplers(sp::SamplerTag{<:Zip}) = sp.data
 
@@ -60,7 +60,7 @@ Fill(::Type{X}, dims::Integer...) where {X}   = Fill(Uniform(X), Dims(dims))
 
 
 Sampler(RNG::Type{<:AbstractRNG}, f::Fill, n::Repetition) =
-    SamplerTag{typeof(f)}((x    = Sampler(RNG, f.x, Val(Inf)),
+    SamplerTag{typeof(f)}((x    = sampler(RNG, f.x, Val(Inf)),
                            dims = f.dims))
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Fill}) =

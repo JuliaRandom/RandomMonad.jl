@@ -1,3 +1,87 @@
+## Iterate ###################################################################
+
+"""
+    Iterate(iter) :: Distribution{eltype(iter)}
+
+Create a distribution yielding one by one elements from iterator `iter`,
+in order.
+
+# Examples
+```jldoctest
+julia> rand(Fill(Iterate(Iterators.countfrom(1)), 3), 2)
+2-element Array{Array{Int64,1},1}:
+ [1, 2, 3]
+ [1, 2, 3]
+
+julia> rand(Iterate(1:9), 10)
+ERROR: ArgumentError: iterator exhausted
+[...]
+```
+
+!!! note
+    Iterate(iter) is semantically equivalent to the following definition:
+    ```julia
+    function Iterate(iter)
+        local st
+        Bind(Pure(nothing)) do _
+            it = @isdefined(st) ? iterate(iter, st) :
+                                  iterate(iter)
+            it === nothing && throw(ArgumentError("iterator exhausted"))
+            st = it[2]
+            Pure(it[1])
+        end
+    end
+    ```
+"""
+struct Iterate{T,I} <: Distribution{T}
+    iter::I
+
+    Iterate(iter) = new{eltype(iter),typeof(iter)}(iter)
+end
+
+mutable struct SamplerIterate{T,I,E,S} <: SamplerReset{T}
+    iter::I
+    elem::Union{Some{E},Nothing} # Some only on first iteration
+    state::S
+end
+
+function Sampler(::Type{RNG}, it::Iterate{T,I},
+                 n::Repetition) where {RNG<:AbstractRNG,T,I}
+    r = iterate(it.iter)
+    if r === nothing
+        SamplerIterate{T,Nothing,Nothing,Nothing}(nothing, nothing, nothing)
+    else
+        x, st = r
+        SamplerIterate{T,I,typeof(x),typeof(st)}(it.iter,Some(x),st)
+    end
+end
+
+function reset!(sp::SamplerIterate, _...)
+    x, st = iterate(sp.iter) # we know it's not nothing
+    sp.elem = Some(x)
+    sp.state = st
+    sp
+end
+
+reset!(sp::SamplerIterate{T,Nothing}, _...) where {T} = sp # nothing to do
+
+function rand(rng::AbstractRNG, sp::SamplerIterate)
+    if sp.elem !== nothing
+        elem = sp.elem
+        sp.elem = nothing
+        return something(elem)
+    end
+    r = iterate(sp.iter, sp.state)
+    r === nothing &&
+        throw(ArgumentError("iterator exhausted"))
+    sp.state = r[2]
+    r[1]
+end
+
+rand(rng::AbstractRNG, sp::SamplerIterate{T,Nothing}) where {T} =
+    throw(ArgumentError("iterator exhausted"))
+
+
 ## SubSeq ####################################################################
 
 """

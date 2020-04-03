@@ -383,6 +383,31 @@ end
     @test allunique(rand(u, 2))
 end
 
+@testset "Iterate" begin
+    it = Iterate(1:0)
+    @test_throws ArgumentError rand(it)
+    @test_throws ArgumentError rand(it, 2)
+    a = rand(it, 0)
+    @test a isa Vector{Int}
+    @test isempty(a)
+
+    it = Iterate(1:3)
+    @test rand(it) == 1
+    @test rand(it) == 1
+    @test rand(it, 3) == 1:3
+    @test_throws ArgumentError rand(it, 4)
+
+    a = rand(Fill(it, 3), 2)
+    for v in a
+        @test v == 1:3
+    end
+
+    it = Iterate(Iterators.countfrom(9))
+    @test rand(it) == 9
+    @test rand(it) == 9
+    @test rand(Fill(it, 9)) == 9:17
+end
+
 @testset "SubSeq" begin
     s = SubSeq(1:100, .1)
     @test eltype(s) == Vector{Int}

@@ -167,6 +167,48 @@ function rand(rng::AbstractRNG, sp::SamplerTag{<:Bind})
 end
 
 
+## Thunk #####################################################################
+
+"""
+    Thunk(f) :: Distribution
+
+Create a distribution whose each generated value is the result of calling
+`d = f()` and then returning a random value drawn from distribution `d`.
+This is a particular case of [`Bind`](@ref), as `Thunk(f)` is equivalent
+to `Bind(_ -> f(), Pure(nothing))`.
+
+# Examples
+```julia-repl
+julia> rand(let i::Int = 0
+                Thunk() do
+                   i += 1
+                   Uniform(1:i)
+                end
+            end, 5)
+5-element Array{Int,1}:
+ 1
+ 1
+ 3
+ 4
+ 2
+```
+"""
+struct Thunk{F,T} <: Distribution{T}
+    f::F
+
+    Thunk{T}(f::F) where {T,F} = new{F,T}(f)
+end
+
+function Thunk(f::F) where F
+    rt = Base.return_types(f, ())
+    T = length(rt) > 1 ? Any : rt[1]
+    Thunk{gentype(T)}(f)
+end
+
+rand(rng::AbstractRNG, sp::SamplerTrivial{<:Thunk}) =
+    rand(rng, sp[].f())
+
+
 ## Lift ######################################################################
 
 """

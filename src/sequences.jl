@@ -23,7 +23,7 @@ ERROR: ArgumentError: iterator exhausted
     ```julia
     function Iterate(iter)
         local st
-        Bind(Pure(nothing)) do _
+        Thunk() do
             it = @isdefined(st) ? iterate(iter, st) :
                                   iterate(iter)
             it === nothing && throw(ArgumentError("iterator exhausted"))

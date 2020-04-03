@@ -252,6 +252,22 @@ end
     @test all(v -> eltype(v) ∈ [Bool, Float64, Int], vs)
 end
 
+@testset "Thunk" begin
+    t = let i::Int = 0
+            Thunk() do
+                i += 1
+                Uniform(1:i)
+            end
+        end
+    @test eltype(t) == Int # because of the i::Int in let
+    @test rand(t) == 1
+    @test rand(t) ∈ 1:2
+    v = rand(t, 3)
+    for i in 1:3
+        @test v[i] ∈ 1:(i+2)
+    end
+end
+
 @testset "Lift" begin
     d = Lift(x -> 2x, 1:3)
     @test rand(d) ∈ 2:2:6

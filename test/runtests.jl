@@ -321,6 +321,10 @@ end
     for z ∈ (z1, z2), t ∈ z
         @test all(∈((-1, 1)), t)
     end
+
+    # test reset!
+    a = rand(Fill(Filter(_->true, Zip(Unique(1:4))), 4), 2)
+    @test a isa Vector{Vector{Tuple{Int}}}
 end
 
 @testset "Reduce" begin

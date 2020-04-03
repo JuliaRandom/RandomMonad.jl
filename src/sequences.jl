@@ -126,14 +126,70 @@ struct SubSeq{T,A} <: Distribution{T}
         new{Vector{T},typeof(a)}(a, p)
 end
 
-rand!(rng::AbstractRNG, s::AbstractVector, sp::SamplerTrivial{<:SubSeq}, ::Val{1}) =
+rand!(rng::AbstractRNG, s::AbstractVector,
+      sp::SamplerTrivial{<:SubSeq}, ::Val{1}) =
     randsubseq!(rng, s, sp[].a, sp[].p)
 
 rand(rng::AbstractRNG, sp::SamplerTrivial{<:SubSeq{T}}) where {T} =
     rand!(rng, T(), sp, Val(1))
 
 
-## Shuffling
+## SubIter ###################################################################
+
+"""
+    SubIter(iter, p::Real) :: Distribution{eltype(iter)}
+
+Create a distribution yielding one by one some elements
+from iterator `iter`, in order. Each element is included with
+independent probability `p`. Note that
++ `SubIter(iter, 1)` is equivalent to `Iterate(iter)`
++ `rand(SubIter(array, p), n)` is somewhat equivalent to
+  `rand(SubSeq(array, p))[1:n]`, assuming `n` is small enough so that
+  not all the values of `array` are consumed.
+
+# Examples
+```julia-repl
+julia> rand(Fill(SubIter(Iterators.countfrom(1), .2), 10), 2)
+2-element Array{Array{Int64,1},1}:
+ [4, 5, 6, 13, 17, 21, 23, 41, 42, 48]
+ [2, 6, 12, 28, 49, 51, 58, 60, 65, 66]
+```
+
+!!! note
+    `SubIter(iter, p)` is semantically equivalent (roughly) to:
+    ```
+    SubIter(iter, p) =
+        Keep(x -> x !== nothing,
+             Bind(Zip(Bernoulli(p), Iterate(iter))) do (succ, x)
+                 Pure(succ ? x : nothing)
+             end)
+    ```
+    This is assuming that `iter` doesn't contain `nothing`.
+"""
+struct SubIter{T,I} <: Distribution{T}
+    iter::I
+    p::Float64
+
+    SubIter(iter, p::Real) = new{eltype(iter),typeof(iter)}(iter, p)
+end
+
+Sampler(::Type{RNG}, sub::SubIter, n::Repetition) where {RNG<:AbstractRNG} =
+    SamplerTag{typeof(sub)}((sp = Sampler(RNG, Iterate(sub.iter), n),
+                             bernouilli = Sampler(RNG, Bernoulli(sub.p), n)))
+
+reset!(sp::SamplerTag{<:SubIter}, n...) = (reset!(sp.data.sp, n...); sp)
+
+function rand(rng::AbstractRNG, sp::SamplerTag{<:SubIter{T}})::T where {T}
+    it = sp.data.sp
+    bernouilli = sp.data.bernouilli
+    while true
+        x = rand(rng, it)
+        rand(rng, bernouilli) && return x
+    end
+end
+
+
+## Shuffling #################################################################
 
 ### Fisher-Yates
 

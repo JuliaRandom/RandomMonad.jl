@@ -439,6 +439,21 @@ end
     end
 end
 
+@testset "SubIter" begin
+    s = SubIter(Iterators.countfrom(1), .1)
+    @test eltype(s) == Int
+    for n = (Val(1), Val(Inf))
+        sp = Sampler(MersenneTwister, s, n)
+        v = [rand(sp) for _=1:10]
+        @test issorted(v)
+        @test allunique(v)
+        @test v isa Vector{Int}
+        @test v[end] > 10 # very unlikely to fail
+        RandomMonad.reset!(sp)
+        @test rand(sp) < v[end] # very unlikely to fail
+    end
+end
+
 @testset "$ShuffleAlgo" for ShuffleAlgo = (FisherYates, SelfAvoid, Shuffle)
     u = ShuffleAlgo(1:3)
     @test eltype(u) == Int

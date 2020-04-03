@@ -12,12 +12,8 @@ struct Zip{T,X} <: Distribution{T}
     end
 end
 
-zipsamplers(sp::SamplerTrivial{<:Zip}) = sp[].xs
-
-Sampler(::Type{RNG}, z::Zip, n::Val{Inf}) where {RNG<:AbstractRNG} =
+Sampler(::Type{RNG}, z::Zip, n::Repetition) where {RNG<:AbstractRNG} =
     SamplerTag{typeof(z)}(map(x -> sampler(RNG, x, n), z.xs))
-
-zipsamplers(sp::SamplerTag{<:Zip}) = sp.data
 
 function reset!(sp::SamplerTag{<:Zip}, n...)
     foreach(sp.data) do x
@@ -26,19 +22,17 @@ function reset!(sp::SamplerTag{<:Zip}, n...)
     sp
 end
 
-ZipSampler{T} = Union{SamplerTag{<:Zip{T}},
-                      SamplerTrivial{<:Zip{T}}}
-
-rand(rng::AbstractRNG, sp::ZipSampler{T}) where {T} =
-    map(x -> rand(rng, x), zipsamplers(sp))::T
+rand(rng::AbstractRNG, sp::SamplerTag{<:Zip{T}}) where {T} =
+    map(x -> rand(rng, x), sp.data)::T
 
 function rand!(rng::AbstractRNG, t::T,
-               sp::ZipSampler{S}, ::Val{N}) where N where S where T<:Tuple
+               sp::SamplerTag{<:Zip{S}},
+               ::Val{N}) where N where S where T<:Tuple
     N < 2 && throw(ArgumentError("can not mutate a tuple"))
     fieldcount(T) != fieldcount(S) &&
         throw(ArgumentError("tuples must have same size"))
 
-    for (x, s) in zip(t, zipsamplers(sp))
+    for (x, s) in zip(t, sp.data)
         rand!(rng, x, s, Val(N-1))
     end
     t

@@ -571,6 +571,17 @@ end
     @test all(∈(1:4), t[2])
     @test_throws ArgumentError rand!(t, Zip(1:2, 1:3), Val(1)) # can't mutate tuple
     @test_throws ArgumentError rand!((t..., t...), z2, Val(2)) # not same size
+
+    # check that sub-samplers are initialized in Sampler(rng, ::Zip, Val(1))
+    for n = (1, Inf)
+        sp = Sampler(MersenneTwister, Zip(Iterate(1:9)), Val(n))
+        for i = 1:9
+            @test rand(sp) == (i,)
+        end
+        sp = Sampler(MersenneTwister, Zip(Shuffle(1:9)), Val(n))
+        v = [rand(sp) for _=1:9]
+        @test allunique(v)
+    end
 end
 
 @testset "Fill" begin

@@ -304,6 +304,15 @@ end
     end
 end
 
+@testset "Filter" begin
+    f = Filter(x -> x != 0, Fill(-1:1, 10))
+    @test eltype(f) == Vector{Int}
+    @test all(∈([-1, 1]), rand(f))
+    f = Filter(x -> x > 0, Fill(Normal(), 10))
+    @test eltype(f) == Vector{Float64}
+    @test all(x -> x > 0, rand(f))
+end
+
 @testset "Reduce" begin
     r = Reduce(+, Fill(1:3, 2))
     @test rand(r) ∈ 2:6

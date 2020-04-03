@@ -272,7 +272,7 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Keep}) =
     end
 
 
-## Map
+## Map #######################################################################
 
 """
     Map(f, D...)
@@ -323,7 +323,48 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Map{T}}) where {T} =
     convert(T, map(sp.data.f, (rand(rng, d) for d in sp.data.d)...))
 
 
-## Reduce
+## Filter ####################################################################
+
+"""
+    Filter(f, X)
+
+Given distribution `X` yielding collection `x`, create a distribution
+yielding `filter(f, x)`.
+
+!!! note
+    `Filter(f, X)` is semantically equivalent to `Lift(filter, Pure(f), X)`.
+
+# Examples
+```julia-repl
+julia>  rand(Filter(x -> x != 0, Fill(-1:1, 6)))
+4-element Array{Int64,1}:
+ -1
+ -1
+  1
+ -1
+```
+"""
+struct Filter{T,F,D} <: Distribution{T}
+    f::F
+    d::D
+end
+
+Filter(f::F, d) where {F} = Filter{gentype(d),F,typeof(d)}(f, d)
+
+
+### sampling
+
+Sampler(RNG::Type{<:AbstractRNG}, r::Filter, n::Repetition) =
+    SamplerTag{typeof(r)}((f = r.f,
+                           d = Sampler(RNG, r.d, n)))
+
+reset!(sp::SamplerTag{<:Filter}, n...) = (reset!(sp.data.d, n...); sp)
+
+rand(rng::AbstractRNG, sp::SamplerTag{<:Filter{T}}) where {T} =
+    convert(T, filter(sp.data.f, rand(rng, sp.data.d)))
+
+
+## Reduce ####################################################################
 
 struct Reduce{T,F,D} <: Distribution{T}
     f::F

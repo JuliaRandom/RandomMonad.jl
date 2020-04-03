@@ -153,17 +153,20 @@ struct Bind{F,X,T} <: Distribution{T}
     f::F
     x::X
 
-    Bind{T}(f::F, x::X) where {T,F,X} = new{F,X,T}(f, x)
+    function Bind{T}(f::F, x) where {T,F}
+        x = wrap(x)
+        new{F,typeof(x),T}(f, x)
+    end
 end
 
-function Bind(f::F, x::X) where {X,F}
+function Bind(f::F, x) where F
     rt = Base.return_types(f, (gentype(x),))
     T = length(rt) > 1 ? Any : rt[1]
     Bind{gentype(T)}(f, x)
 end
 
 Sampler(::Type{RNG}, b::Bind, n::Repetition) where {RNG<:AbstractRNG} =
-    SamplerTag{typeof(b)}((x = Sampler(RNG, b.x, n),
+    SamplerTag{typeof(b)}((x = sampler(RNG, b.x, n),
                            f = b.f))
 
 reset!(sp::SamplerTag{<:Bind}, n...) = (reset!(sp.data.x); sp)

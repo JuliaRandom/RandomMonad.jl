@@ -251,6 +251,11 @@ end
     @test all(v -> length(v) ∈ 1:4, vs)
     @test all(v -> eltype(v) ∈ [Bool, Float64, Int], vs)
 
+    # constructor accepts samplers
+    @test rand(Bind(Pure, Sampler(MersenneTwister, 1:3))) isa Int
+    # Bind doesn't store DataType, but a UniformType
+    @test fieldtype(typeof(Bind(Pure, Float64)), 2) == RandomMonad.UniformType{Float64}
+
     # reset!
     v = rand(Fill(Bind(Pure, Iterate(1:99)), 3), 2)
     @test all(==(1:3), v)

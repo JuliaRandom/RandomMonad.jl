@@ -326,13 +326,19 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Map{T}}) where {T} =
 ## Filter ####################################################################
 
 """
-    Filter(f, X)
+    Filter(   f, X) :: Distribution{eltype(X)}
+    Filter{T}(f, X) :: Distribution{T}
 
 Given distribution `X` yielding collection `x`, create a distribution
 yielding `filter(f, x)`.
+In the first form, `Filter(f, X)`, the collection `filter(f, x)` is
+assumed to be of the same type as `x`. If this is not the case and
+it has type `T` instead, use the second form `Filter{T}(f, X)`.
 
 !!! note
-    `Filter(f, X)` is semantically equivalent to `Lift(filter, Pure(f), X)`.
+    `Filter(f, X)` is semantically equivalent to `Lift(filter, Pure(f), X)`,
+    which can be used as an alternative to `Filter{T}(f, X)` when `T` is not
+    known.
 
 # Examples
 ```julia-repl
@@ -342,6 +348,24 @@ julia>  rand(Filter(x -> x != 0, Fill(-1:1, 6)))
  -1
   1
  -1
+
+julia> rand(Filter(x -> x != 0, Zip(-1:1, -1:1)))
+ERROR: MethodError: Cannot `convert` an object of type
+  Tuple{} to an object of type
+  Tuple{Int64}
+[...]
+
+julia> rand(Filter{Tuple}(x -> x != 0, Zip(-1:1, -1:1)), 3)
+3-element Array{Tuple,1}:
+ (-1,)
+ ()
+ (1, -1)
+
+julia> rand(Lift(filter, Pure(x -> x != 0), Zip(-1:1, -1:1)), 3)
+3-element Array{Tuple{Vararg{Int64,N} where N},1}:
+ (-1, 1)
+ ()
+ (1, -1)
 ```
 """
 struct Filter{T,F,D} <: Distribution{T}
@@ -349,7 +373,9 @@ struct Filter{T,F,D} <: Distribution{T}
     d::D
 end
 
-Filter(f::F, d) where {F} = Filter{gentype(d),F,typeof(d)}(f, d)
+Filter{T}(f::F, d) where {T,F} = Filter{T,F,typeof(d)}(f, d)
+
+Filter(f::F, d) where {F} = Filter{eltype(d)}(f, d)
 
 
 ### sampling

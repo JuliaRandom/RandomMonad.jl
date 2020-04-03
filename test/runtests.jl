@@ -383,6 +383,21 @@ end
     @test allunique(rand(u, 2))
 end
 
+@testset "SubSeq" begin
+    s = SubSeq(1:100, .1)
+    @test eltype(s) == Vector{Int}
+    a = rand(s)
+    b = Int[]
+    c = rand!(b, s, Val(1))
+    @test b === c
+    for v = (a, b)
+        @test v isa Vector{Int}
+        @test issorted(v)
+        @test allunique(v)
+        @test all(∈(1:100), v)
+    end
+end
+
 @testset "$ShuffleAlgo" for ShuffleAlgo = (FisherYates, SelfAvoid, Shuffle)
     u = ShuffleAlgo(1:3)
     @test eltype(u) == Int

@@ -1,3 +1,54 @@
+## SubSeq ####################################################################
+
+"""
+    SubSeq(A::AbstractArray{T}, p::Real) where {T} :: Distribution{Vector{T}}
+
+Create a distribution yielding vectors consisting of a random subsequence of
+the given array `A`, where each element of `A` is included (in order) with
+independent probability `p`. (Complexity is linear in `p*length(A)`, so this
+is efficient even if `p` is small and `A` is large.) Technically,
+this process is known as "Bernoulli sampling" of `A`.
+
+# Examples
+```julia-repl
+julia> rand(SubSeq(1:8, 0.3))
+3-element Array{Int64,1}:
+ 3
+ 4
+ 7
+
+julia> rand!(Int[], SubSeq(1:8, 0.3), Val(1))
+2-element Array{Int64,1}:
+ 4
+ 5
+```
+
+!!! note
+    `SubSeq` is implemented as a thin wrapper over `Random.randsubseq!`, but
+    is semantically equivalent to the following definition:
+    ```julia
+    SubSeq(A, p) = Lift(filter,
+                        Bind(Fill(Bernoulli(p), length(A))) do selected
+                            Pure(_ -> pop!(selected))
+                        end,
+                        Pure(A))
+    ```
+"""
+struct SubSeq{T,A} <: Distribution{T}
+    a::A
+    p::Float64
+
+    SubSeq(a::AbstractArray{T}, p::Real) where {T} =
+        new{Vector{T},typeof(a)}(a, p)
+end
+
+rand!(rng::AbstractRNG, s::AbstractVector, sp::SamplerTrivial{<:SubSeq}, ::Val{1}) =
+    randsubseq!(rng, s, sp[].a, sp[].p)
+
+rand(rng::AbstractRNG, sp::SamplerTrivial{<:SubSeq{T}}) where {T} =
+    rand!(rng, T(), sp, Val(1))
+
+
 ## Shuffling
 
 ### Fisher-Yates

@@ -143,6 +143,11 @@ julia> rand(b, 4)
     exploited. So while `Bind` is a powerful general tool,
     specialized implementations of certain constructions might
     achieve better performance.
+
+    Moreover, only `X` can have a stateful sampler (non-trivial
+    `reset!` method), the distribution returned by `f` can not:
+    indeed, a new sampler is created every time.
+    For example, `Bind(n -> Iterate(1:n), 1:9)` always yields `1`.
 """
 struct Bind{F,X,T} <: Distribution{T}
     f::F
@@ -160,6 +165,8 @@ end
 Sampler(::Type{RNG}, b::Bind, n::Repetition) where {RNG<:AbstractRNG} =
     SamplerTag{typeof(b)}((x = Sampler(RNG, b.x, n),
                            f = b.f))
+
+reset!(sp::SamplerTag{<:Bind}, n...) = (reset!(sp.data.x); sp)
 
 function rand(rng::AbstractRNG, sp::SamplerTag{<:Bind})
     x = rand(rng, sp.data.x)

@@ -250,6 +250,13 @@ end
     @test allunique(length.(vs))
     @test all(v -> length(v) ∈ 1:4, vs)
     @test all(v -> eltype(v) ∈ [Bool, Float64, Int], vs)
+
+    # reset!
+    v = rand(Fill(Bind(Pure, Iterate(1:99)), 3), 2)
+    @test all(==(1:3), v)
+    sp = Sampler(MersenneTwister, Bind(Pure, Iterate(1:99)), Val(1))
+    @test rand(sp, 3) == 1:3
+    @test rand(sp, 3) == 1:3
 end
 
 @testset "Thunk" begin

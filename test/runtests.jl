@@ -671,14 +671,20 @@ end
     p = Pack(d, 2)
     @test eltype(p) == Vector{Int}
     v = rand(p)
-    @test v isa Vector{Int}
-    @test size(v) == (2,)
-    @test all(∈(1:3), v)
+    w = rand!(copy(v), p, Val(1))
+    for u = (v, w)
+        @test u isa Vector{Int}
+        @test size(u) == (2,)
+        @test all(∈(1:3), u)
+    end
 
-    d = Fill(1:9, 9)
+    d = Shuffle(1:9, 9)
     p = Pack(d)
     @test eltype(p) == Vector{Int}
     @test size(rand(p)) == (9,)
+
+    d = Shuffle([[1], [1, 2]])
+    @test_throws ArgumentError Pack(d)
 
     d = Fill(1:9, 9)
     p = Pack(d, 0)

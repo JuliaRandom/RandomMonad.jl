@@ -304,6 +304,15 @@ struct Shuffle{T,A} <: Distribution{T}
 
 end
 
+function variate_size(sh::Shuffle)
+    if isunivariate(sh)
+        T = gentype(sh)
+        T <: Number ? () : throw(ArgumentError("variate_size undefined"))
+    else
+        (sh.n,)
+    end
+end
+
 mutable struct SamplerShuffle{T,A,S<:Sampler} <: SamplerReset{T}
     a::A
     n::Int
@@ -319,7 +328,7 @@ end
 Sampler(::Type{RNG}, sh::Shuffle{T}, n::Repetition) where {RNG<:AbstractRNG,T} =
     SamplerShuffle{T}(sh.a, sh.n, sa_idx(RNG, sh.a))
 
-isunivariate(::SamplerShuffle{T,A}) where {T,A} = T === eltype(A)
+isunivariate(::Union{Shuffle{T,A},SamplerShuffle{T,A}}) where {T,A} = T === eltype(A)
 
 function _reset!(sp::SamplerShuffle, n=-1)::Int
     na = length(sp.a)
@@ -372,7 +381,7 @@ function rand!(rng::AbstractRNG, v::AbstractVector, sp::SamplerShuffle{T}, ::Val
     isunivariate(sp) &&
         throw(ArgumentError("can not create vector from univariate Shuffle"))
     n = sp.n
-    resize!(v, n)
+    length(v) != n && resize!(v, n) # conditional, as some vectors don't support resize!
     if n < 3
         n < 1 && return v
         j = rand(rng, sp.idx)

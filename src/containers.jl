@@ -1,3 +1,34 @@
+## variate_size ##############################################################
+
+"""
+    variate_size(distribution) :: Dims
+
+Return the `size` of each sample from `distribution`, when it can be
+determined in advance. This is used in particular by `Pack`.
+
+# Examples
+```julia-repl
+julia> variate_size(Normal())
+()
+
+julia> variate_size(Fill(Normal(), 2, 3))
+(2, 3)
+
+julia> rand(SubSeq(1:9, 0.3), 2)
+2-element Array{Array{Int64,1},1}:
+ [4, 7]
+ [5]
+
+julia> variate_size(SubSeq(1:9, 0.3)) # no pre-determined size
+ERROR: MethodError: no method matching variate_size(::SubSeq{Array{Int64,1},UnitRange{Int64}})
+[...]
+```
+"""
+function variate_size end
+
+variate_size(d::Distribution{<:Number}) = ()
+
+
 ## Zip #######################################################################
 
 # note: Zip(a, b...) is similar to RandomExtensions.make(Tuple, a, b...)
@@ -38,6 +69,7 @@ function rand!(rng::AbstractRNG, t::T,
     t
 end
 
+
 ## Fill ######################################################################
 
 struct Fill{X,T,N} <: Distribution{Array{T,N}}
@@ -52,6 +84,7 @@ Fill(x, dims::Integer...) where {X} = Fill(x, Dims(dims))
 Fill(::Type{X}, dims::Dims{N})    where {X,N} = Fill(Uniform(X), dims)
 Fill(::Type{X}, dims::Integer...) where {X}   = Fill(Uniform(X), Dims(dims))
 
+variate_size(f::Fill) = f.dims
 
 Sampler(RNG::Type{<:AbstractRNG}, f::Fill, n::Repetition) =
     SamplerTag{typeof(f)}((x    = sampler(RNG, f.x, Val(Inf)),
@@ -79,3 +112,52 @@ function rand!(rng::AbstractRNG, a::AbstractArray, sp::SamplerTag{<:Fill}, ::Val
     end
     return a
 end
+
+
+## Pack ######################################################################
+
+struct Pack{X,T,N} <: Distribution{Array{T,N}}
+    x::X
+    dims::Dims{N} # (inner_dims..., outer_dims...)
+    dim::Int # length of inner_dims
+
+    function Pack(x::X, dims::Dims{N}) where {X,N}
+        A = gentype(x)
+        A <: AbstractArray || throw(ArgumentError(
+            "first argument of Pack must generate arrays"))
+        inner = variate_size(x)
+        dims = (inner..., dims...)
+        new{X,eltype(gentype(x)),length(dims)}(x, dims, length(inner))
+    end
+end
+
+Pack(x, dims::Integer...) where {X} = Pack(x, Dims(dims))
+
+Pack(::Type{X}, dims::Dims{N})    where {X,N} = Pack(Uniform(X), dims)
+Pack(::Type{X}, dims::Integer...) where {X}   = Pack(Uniform(X), Dims(dims))
+
+Sampler(RNG::Type{<:AbstractRNG}, p::Pack, n::Repetition) =
+    SamplerTag{typeof(p)}((x    = sampler(RNG, p.x, Val(Inf)),
+                           dims = p.dims,
+                           dim  = p.dim))
+
+function rand!(rng::AbstractRNG, A::AbstractArray{T,N},
+               sp::SamplerTag{Pack{X,T,N}}, ::Val{1}) where {X,T,N}
+
+    size(A) == sp.data.dims || throw(DimensionMismatch(
+    "size of destination array ($(size(A))) does not match" *
+        "dimensions of Pack ($(sp.data.dims))"))
+
+    inner_idxs = CartesianIndices(sp.data.dims[1:sp.data.dim])
+    idxs = CartesianIndices(sp.data.dims[sp.data.dim+1:end])
+    x = sp.data.x
+
+    reset!(x, length(idxs))
+    for idx in idxs
+        rand!(rng, view(A, inner_idxs, idx), x, Val(1))
+    end
+    A
+end
+
+rand(rng::AbstractRNG, sp::SamplerTag{Pack{X,T,N}}) where {X,T,N} =
+    rand!(rng, Array{T,N}(undef, sp.data.dims), sp, Val(1))

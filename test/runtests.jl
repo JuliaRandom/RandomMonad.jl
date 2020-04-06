@@ -659,3 +659,48 @@ end
     rand!(a, Fill(inner, 4), Val(2))
     @test a[1] === b[1]
 end
+
+@testset "variate_size" begin
+    @test variate_size(Normal()) == ()
+    @test variate_size(Fill(Normal(), 2, 3)) == (2, 3)
+    @test_throws MethodError variate_size(SubSeq(1:9, 0.3))
+end
+
+@testset "Pack" begin
+    d = Fill(1:3)
+    p = Pack(d, 2)
+    @test eltype(p) == Vector{Int}
+    v = rand(p)
+    @test v isa Vector{Int}
+    @test size(v) == (2,)
+    @test all(∈(1:3), v)
+
+    d = Fill(1:9, 9)
+    p = Pack(d)
+    @test eltype(p) == Vector{Int}
+    @test size(rand(p)) == (9,)
+
+    d = Fill(1:9, 9)
+    p = Pack(d, 0)
+    @test size(rand(p)) == (9,0)
+
+    d = Fill(1:9) # 0-d
+    p = Pack(d)
+    @test rand(p) isa Array{Int,0}
+    p = Pack(d, 3)
+    @test rand(p) isa Vector{Int}
+
+    d = Fill(Shuffle(1:9), 3, 3)
+    for p = (Pack(d, 2, 0x4),
+             Pack(d, (2, 4)))
+        @test eltype(p) == Array{Int,4}
+        v = rand(p)
+        @test v isa Array{Int,4}
+        @test size(v) == (3,3,2,4)
+        for idx in CartesianIndices((2, 4))
+            sub = view(v, CartesianIndices((3, 3)), idx)
+            @test all(∈(1:9), sub)
+            @test allunique(sub)
+        end
+    end
+end

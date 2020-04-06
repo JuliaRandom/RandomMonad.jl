@@ -123,8 +123,6 @@ struct Pack{X,T,N} <: Distribution{Array{T,N}}
 
     function Pack(x::X, dims::Dims{N}) where {X,N}
         A = gentype(x)
-        A <: AbstractArray || throw(ArgumentError(
-            "first argument of Pack must generate arrays"))
         inner = variate_size(x)
         dims = (inner..., dims...)
         new{X,eltype(gentype(x)),length(dims)}(x, dims, length(inner))
@@ -153,8 +151,15 @@ function rand!(rng::AbstractRNG, A::AbstractArray{T,N},
     x = sp.data.x
 
     reset!(x, length(idxs))
-    for idx in idxs
-        rand!(rng, view(A, inner_idxs, idx), x, Val(1))
+
+    if gentype(x) <: AbstractArray
+        for idx in idxs
+            rand!(rng, view(A, inner_idxs, idx), x, Val(1))
+        end
+    else
+        for idx in idxs # similar to Fill
+            @inbounds A[idx] = rand(rng, x)
+        end
     end
     A
 end

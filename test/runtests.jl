@@ -686,9 +686,17 @@ end
     d = Shuffle([[1], [1, 2]])
     @test_throws ArgumentError Pack(d)
 
+    # Fill-like behavior for univariate distributions
+    d = Shuffle(1:6)
+    p = Pack(d, 2, 3)
+    v = rand(p)
+    @test allunique(v)
+    @test all(∈(1:6), v)
+    @test size(v) == (2, 3)
+
     d = Fill(1:9, 9)
     p = Pack(d, 0)
-    @test size(rand(p)) == (9,0)
+    @test size(rand(p)) == (9, 0)
 
     d = Fill(1:9) # 0-d
     p = Pack(d)

@@ -106,6 +106,19 @@ end
     a = rand(m)
     @test a[2] == 0
     @test a[1] + a[3] == 10
+
+    # rand! & Pack
+    b = rand!(a, m, Val(1))
+    @test a === b
+    @test a[2] == 0
+    @test a[1] + a[3] == 10
+
+    a = rand(Pack(m, 5))
+    @test size(a) == (3, 5)
+    for j=1:5
+        @test a[1, j] + a[3, j] == 10
+        @test a[2, j] == 0
+    end
 end
 
 @testset "MixtureModel" begin

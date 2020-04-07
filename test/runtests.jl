@@ -264,6 +264,14 @@ end
     @test rand(sp, 3) == 1:3
 end
 
+@testset "Join" begin
+    j = Join(Uniform((Uniform(Float64) + 10, Uniform(Float64))))
+    @test eltype(j) == Float64
+    @test all(rand(j, 100)) do x
+        0 <= x < 1 || 10 <= x < 11
+    end
+end
+
 @testset "Thunk" begin
     t = let i::Int = 0
             Thunk() do

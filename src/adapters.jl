@@ -177,6 +177,61 @@ function rand(rng::AbstractRNG, sp::SamplerTag{<:Bind})
 end
 
 
+## Join ######################################################################
+
+"""
+    Join(x) :: Distribution
+
+Given a distribution `x` yielding another distribution yielding `y`,
+`Join(x)` is a distribution yielding `y`. This is equivalent to
+`Bind(identity, x)`. When `x::Distribution{Distribution{T}}`, then
+`Join(x)::Distribution{T}`; in other words, `Join` somehow "flattens"
+two layers of "`Distribution` wrapping" into one.
+
+# Examples
+```julia-repl
+julia> rand(Join(Pure(Normal())))
+1.3938116112906205
+
+julia> rand(Join([Normal(), Normal(10.0, 1.0)]), 5)
+5-element Array{Float64,1}:
+  0.8017321165720984
+  9.987814723449322
+ 10.886780925603274
+  0.17351815418302222
+ 11.606547172156468
+```
+
+!!! note
+    * `Join` can be combined together with `Categorical` to implement
+      "mixture models", e.g.
+    ```julia
+    MixtureModel(components, prior) = Join(Pure(components)[Categorical(prior)])
+    ```
+
+    * `Join` can be easily expressed in terms of `Bind`, but is no less
+    fundamental, given `Lift`. Indeed, `Bind` could be defined as follows:
+    ```julia
+    Bind(f, x) = Join(Lift(f, x))
+    ```
+"""
+struct Join{X,T} <: Distribution{T}
+    x::X
+
+    function Join(x::X) where X
+        U = gentype(x)
+        new{X,gentype(U)}(x)
+    end
+end
+
+Sampler(::Type{RNG}, j::Join, n::Repetition) where {RNG<:AbstractRNG} =
+    SamplerTag{typeof(j)}(Sampler(RNG, j.x, n))
+
+rand(rng::AbstractRNG, sp::SamplerTag{<:Join}) =
+    rand(rng, rand(rng, sp.data))
+
+
+
 ## Thunk #####################################################################
 
 """

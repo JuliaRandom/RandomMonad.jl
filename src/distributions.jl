@@ -120,17 +120,56 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Categorical}) =
 
 ## Multinomial ###############################################################
 
-struct Multinomial{C<:Categorical{Int,Base.OneTo{Int}}} <: Distribution{Vector{Int}}
-    cat::C
+"""
+    Multinomial(n::Integer, weigths)
+
+Multinomial distribution for `n` trials with probabilities specified by
+`weigths`. If `weigths` is an integer, then equal probabilities
+`[1/weigths, ..., 1/weigths]` are used. It's also possible to specify
+`weigths` as a `Categorical` object.
+
+# Examples
+```julia-repl
+julia> rand(Multinomial(100, 3)) # or rand(Multinomial(100, Categorical(3)))
+3-element Array{Int64,1}:
+ 33
+ 40
+ 27
+
+julia> rand(Pack(Multinomial(100, [1, 8, 1]), 10))
+3×10 Array{Int64,2}:
+ 12  13   8   6   4   7   8  11  17  10
+ 80  79  81  79  86  80  81  76  76  72
+  8   8  11  15  10  13  11  13   7  18
+```
+"""
+struct Multinomial{C} <: Distribution{Vector{Int}}
     n::Int
+    cat::C
+
+    function Multinomial(n::Integer,
+                         cat::Union{Categorical{Int,Base.OneTo{Int}},
+                                    Integer})
+        if cat isa Integer
+            cat = Base.OneTo(Int(cat))
+        end
+        new{typeof(cat)}(Int(n), cat)
+    end
 end
 
-variate_size(m::Multinomial) = (ncategories(m.cat),)
+Multinomial(n::Integer, weigths) = Multinomial(n, Categorical(weigths))
+
+_ncategories(r::Base.OneTo) = length(r)
+_ncategories(r::Categorical) = ncategories(r)
+
+ncategories(m::Multinomial) = _ncategories(m.cat)
+
+variate_size(m::Multinomial) = (ncategories(m),)
 
 Sampler(RNG::Type{<:AbstractRNG}, m::Multinomial, n::Repetition) =
     SamplerTag{typeof(m)}((cat  = Sampler(RNG, m.cat, n),
                            # sampler cat doesn't necessary save ncat:
-                           ncat = ncategories(m.cat),
+                           ncat = ncategories(m),
                            n    = m.n))
 
 function rand!(rng::AbstractRNG, A::AbstractArray{<:Number},

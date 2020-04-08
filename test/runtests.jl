@@ -93,31 +93,40 @@ end
 end
 
 @testset "Multinomial" begin
-    m = Multinomial(Categorical(3), 10)
-    @test rand(m) isa Vector{Int}
-    for a in rand(m, 3)
-        @test sum(a) == 10
+    for m in (Multinomial(10, Categorical(3)),
+              Multinomial(10, 3))
+        @test rand(m) isa Vector{Int}
+        for a in rand(m, 3)
+            @test sum(a) == 10
+        end
     end
-    m = Multinomial(Categorical([1, 0, 1]), 10)
-    a = rand(m)
-    @test a[2] == 0
-    @test a[1] + a[3] == 10
 
-    # rand! & Pack
-    b = rand!(a, m, Val(1))
-    @test a === b
-    @test a[2] == 0
-    @test a[1] + a[3] == 10
+    for m in (Multinomial(10, Categorical([1, 0, 1])),
+              Multinomial(10, [1, 0, 1]))
+        a = rand(m)
+        @test a[2] == 0
+        @test a[1] + a[3] == 10
 
-    a = rand(Pack(m, 5))
-    @test size(a) == (3, 5)
-    for j=1:5
-        @test a[1, j] + a[3, j] == 10
-        @test a[2, j] == 0
+        # rand! & Pack
+        b = rand!(a, m, Val(1))
+        @test a === b
+        @test a[2] == 0
+        @test a[1] + a[3] == 10
+
+        a = rand(Pack(m, 5))
+        @test size(a) == (3, 5)
+        for j=1:5
+            @test a[1, j] + a[3, j] == 10
+            @test a[2, j] == 0
+        end
     end
-    # with equal weigths
-    a = rand(Pack(Multinomial(Categorical(3), 10), 20))
-    @test size(a) == (3, 20)
+
+    # Pack with equal weigths
+    for m in (Multinomial(10, Categorical(3)),
+              Multinomial(10, 3))
+        a = rand(Pack(m, 20))
+        @test size(a) == (3, 20)
+    end
 end
 
 @testset "MixtureModel" begin

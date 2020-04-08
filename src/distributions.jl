@@ -47,14 +47,22 @@ rand(rng::AbstractRNG, sp::SamplerTag{Binomial}) =
           (rand(rng, sp.data.sp) for _ = 1:sp.data.n))
 
 
-## Categorical
+## Categorical ###############################################################
 
-struct Categorical{T<:Number} <: Distribution{T}
+struct Categorical{T,A} <: Distribution{T}
+    components::A
     cdf::Vector{Float64}
 
-    Categorical{T}(c::Categorical) where {T} = new{T}(c.cdf)
+    # raw constructor
+    global _Categorical(::Type{T}, cdf::Vector{Float64},
+                        components) where {T} =
+        new{T,typeof(components)}(components, cdf)
 
-    function Categorical{T}(weigths) where T
+    function Categorical(weigths, components=nothing)
+
+        if weigths isa Number # equal weigths
+            weigths = Iterators.repeated(1, Int(weigths))
+        end
         if !isa(weigths, AbstractArray)
             # necessary for accumulate
             # TODO: will not be necessary anymore in Julia 1.5
@@ -65,39 +73,29 @@ struct Categorical{T<:Number} <: Distribution{T}
         isempty(weigths) &&
             throw(ArgumentError("Categorical requires at least one category"))
 
+        if components === nothing
+            components = Base.OneTo(length(weigths))
+        else
+            Base.require_one_based_indexing(components)
+        end
+
+        length(components) == length(weigths) || throw(ArgumentError(
+            "components and weigths must have the same length"))
+
         s = Float64(sum(weigths))
         cdf = accumulate(weigths; init=0.0) do x, y
             x + Float64(y) / s
         end
         @assert isapprox(cdf[end], 1.0) # really?
         cdf[end] = 1.0 # to be sure the algo terminates
-        new{T}(cdf)
+        new{eltype(components),typeof(components)}(components, cdf)
     end
 end
 
-Categorical(weigths) = Categorical{Int}(weigths)
-
-Categorical(n::Number) =
-    Categorical{typeof(n)}(Iterators.repeated(1.0 / Float64(n), Int(n)))
-
-function Base.convert(::Type{Categorical{T}}, d) where {T}
-    d isa Number && throw(ArgumentError(
-        "can not convert a number to a Categorical distribution"))
-    Categorical{T}(d)
-end
-
-Base.convert(::Type{Categorical{T}}, d::Categorical{T}) where {T} = d
-
-
-### sampling
-
-Sampler(RNG::Type{<:AbstractRNG}, c::Categorical, n::Repetition) =
-    SamplerSimple(c, Sampler(RNG, CloseOpen(), n))
-
 # unfortunately requires @inline to avoid allocating
-@inline rand(rng::AbstractRNG, sp::SamplerSimple{Categorical{T}}) where {T} =
-    let c = rand(rng, sp.data)
-        T(findfirst(x -> x >= c, sp[].cdf))
+@inline rand(rng::AbstractRNG, sp::SamplerTrivial{<:Categorical}) =
+    let c = rand(rng, CloseOpen())
+        @inbounds sp[].components[findfirst(x -> x >= c, sp[].cdf)]
     end
 
 # NOTE:
@@ -108,7 +106,7 @@ Sampler(RNG::Type{<:AbstractRNG}, c::Categorical, n::Repetition) =
 ## Multinomial ###############################################################
 
 struct Multinomial <: Distribution{Vector{Int}}
-    cat::Categorical{Int}
+    cat::Categorical{Int,Base.OneTo{Int}}
     n::Int
 end
 
@@ -137,45 +135,40 @@ rand(rng::AbstractRNG, sp::SamplerTag{Multinomial}) =
 
 ## Mixture Model #############################################################
 
-struct MixtureModel{T,CT<:Distribution} <: Distribution{T}
-    components::Vector{CT}
-    prior::Categorical{Int}
+struct MixtureModel{T,C} <: Distribution{T}
+    cat::C
 
-    function MixtureModel{T}(components::Vector{CT}, prior::Categorical) where {T,CT}
-        length(components) != length(prior.cdf) && throw(ArgumentError(
-            "the number of components does not match the length of prior"))
-
-        new{T,CT}(components, prior)
-    end
+    MixtureModel{T}(cat::Categorical) where {T} = new{T,typeof(cat)}(cat)
 end
 
-function MixtureModel(components, prior=nothing)
+MixtureModel(cat::Categorical) = MixtureModel{gentype(eltype(cat))}(cat)
+
+function MixtureModel(weigths, components)
+    components = map(wrap, components)
     T = reduce(typejoin, (gentype(x) for x in components))
-    v = [d isa Distribution ? d : Uniform(d) for d in components]
-    prior = convert(Categorical{Int}, something(prior, Categorical(length(v))))
-    MixtureModel{T}(v, prior)
+    MixtureModel{T}(Categorical(weigths, components))
 end
 
 
-### sampling
+@inline Sampler(::Type{RNG}, m::MixtureModel,
+                n::Val{1}) where {RNG<:AbstractRNG} =
+    SamplerTag{typeof(m)}(Sampler(RNG, m.cat, n))
 
-Sampler(RNG::Type{<:AbstractRNG}, m::MixtureModel, n::Val{1}) =
-    SamplerSimple(m, Sampler(RNG, m.prior, n))
-
-@inline rand(rng::AbstractRNG, sp::SamplerSimple{<:MixtureModel}) =
-    rand(rng, sp[].components[rand(rng, sp.data)])::gentype(sp)
-
-# WARNING: expensive, for less than 100 number generations or so, use Val(1) Sampler
-Sampler(RNG::Type{<:AbstractRNG}, m::MixtureModel{T}, n::Val{Inf}) where {T} =
+# WARNING: expensive, for less than 100 number generations or so,
+# use Val(1) Sampler
+Sampler(::Type{RNG}, m::MixtureModel{T},
+        n::Val{Inf}) where {RNG<:AbstractRNG,T} =
     SamplerTag{typeof(m)}(
-        (components = Sampler{<:T}[Sampler(RNG, c, n) for c in m.components],
-         prior      = Sampler(RNG, m.prior, n)))
+        Sampler(RNG,
+                _Categorical(T, m.cat.cdf,
+                             map(c -> Sampler(RNG, c, n), m.cat.components)),
+                n))
 
-rand(rng::AbstractRNG, sp::SamplerTag{<:MixtureModel}) =
-    rand(rng, sp.data.components[rand(rng, sp.data.prior)])::gentype(sp)
+@inline rand(rng::AbstractRNG, sp::SamplerTag{<:MixtureModel}) =
+    rand(rng, rand(rng, sp.data))::gentype(sp)
 
 
-## Normal
+## Normal ####################################################################
 
 abstract type Normal{T} <: Distribution{T} end
 

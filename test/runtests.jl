@@ -78,18 +78,14 @@ end
     @test all(∈(1:9), rand(Categorical(n), 10))
     @test rand(Categorical(n)) isa Int
     c = Categorical(Float64(n))
-    @test rand(c) isa Float64
+    @test rand(c) isa Int
     @test rand(c) ∈ 1:9
     c = Categorical([1, 7, 2])
     # cf. Bernoulli tests
     @test 620 < count(==(2), rand(c, 1000)) < 780
     @test rand(c) isa Int
-    @test rand(Categorical{Float64}((1, 2, 3, 4))) isa Float64
-
-    c = Categorical(3)
-    @test Categorical{Float64}(c) isa Categorical{Float64}
-    @test convert(Categorical{Float64}, c) isa Categorical{Float64}
-    @test_throws ArgumentError convert(Categorical{Float64}, 3)
+    @test rand(Categorical(Float64.((1, 2, 3, 4)))) isa Int
+    @test rand(Categorical(3, 1.0:3.0)) isa Float64
 
     @test_throws ArgumentError Categorical(())
     @test_throws ArgumentError Categorical([])
@@ -122,7 +118,7 @@ end
 end
 
 @testset "MixtureModel" begin
-    m = MixtureModel([100:300, Normal(), Uniform(500:1000)], [1, 7, 2])
+    m = MixtureModel([1, 7, 2], [100:300, Normal(), Uniform(500:1000)], )
     x = rand(m)
     testtype(x) = x isa Float64 || x isa Int
     @test testtype(x)
@@ -131,16 +127,17 @@ end
     # cf. Bernoulli tests
     @test 620 < count(x -> x isa Float64, xs) < 780
 
-    m = MixtureModel([Normal(), CloseOpen()], (1,2))
-    @test eltype(m.components) == Distribution{Float64} # not crucial
+    m = MixtureModel((1,2), [Normal(), CloseOpen()])
+    @test eltype(m.cat.components) == Distribution{Float64} # not crucial
 
-    m = MixtureModel([Normal(), CloseOpen()])
-    @test m.prior.cdf == [0.5, 1.0]
+    m = MixtureModel(2, [Normal(), CloseOpen()])
+    @test m.cat.cdf == [0.5, 1.0]
     # test that the first argument doesn't need to have length defined
-    m = MixtureModel(Iterators.takewhile(_->true, (Normal(), Exponential(), CloseOpen())))
-    @test m.prior.cdf == [1/3, 2/3, 1.0]
+    m = MixtureModel(3, Iterators.takewhile(_->true,
+                                            (Normal(), Exponential(), CloseOpen())))
+    @test m.cat.cdf == [1/3, 2/3, 1.0]
 
-    @test_throws ArgumentError MixtureModel([1:3, Normal()], [1, 2, 3])
+    @test_throws ArgumentError MixtureModel([1, 2, 3], [1:3, Normal()])
 end
 
 @testset "Normal" begin

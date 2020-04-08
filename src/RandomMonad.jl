@@ -6,9 +6,9 @@ export Bernoulli, Bind, Binomial, Categorical, CloseClose, CloseOpen, counts,
        Counts, Exponential, Fill, Filter, FisherYates, Iterate, Join,
        Keep, Lift, Map,
        MixtureModel, Multinomial, Normal, OpenClose, OpenOpen, Pack,
-       Poisson, Pure,
-       Reduce, SelfAvoid, Shuffle, SubIter, SubSeq, Thunk, Uniform, Unique,
-       variate_size, Zip
+       pmf, Poisson, Pure,
+       Reduce, SelfAvoid, Shuffle, SubIter, SubSeq, support, Thunk, Uniform,
+       Unique, variate_size, Zip
 
 using Random: AbstractRNG, gentype, randexp, randn, Random, randsubseq!,
               Repetition
@@ -118,6 +118,7 @@ end
 ## includes
 
 include("samplerhelpers.jl")
+include("pmf.jl")
 include("wrap.jl")
 include("distributions.jl")
 include("floatintervals.jl")

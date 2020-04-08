@@ -55,8 +55,11 @@ end
         for v in (v0, wrap(v0), Tuple(v0), wrap(Tuple(v0)),
                   Uniform(v0), Uniform(Tuple(v0)))
             @test support(v) == vs
+            fpmf = pmf(v)
             for (x, p) in zip(v0, vp)
                 @test pmf(v, x) == p
+                @test fpmf(x) == p
+                @test fpmf[x] == p # not public API (yet)
             end
         end
     end
@@ -82,9 +85,11 @@ end
 
     b = Bernoulli(0.3)
     @test support(b) == false:true
-    @test pmf(b, -1) == pmf(b, 2) == 0
-    @test pmf(b, 0) == 0.7
-    @test pmf(b, 1) == 0.3
+    for bpmf = (x -> pmf(b, x), pmf(b))
+        @test bpmf(-1) == pmf(b, 2) == 0
+        @test bpmf(0) == 0.7
+        @test bpmf(1) == 0.3
+    end
 end
 
 @testset "Binomial" begin
@@ -104,6 +109,7 @@ end
             b = Binomial(n, p)
             @test support(b) == 0:n # unlikely that p ∈ (0.0, 1.0)
             @test sum(pmf(b, x) for x in support(b)) ≈ 1.0
+            @test sum(values(pmf(b))) ≈ 1.0
         end
     end
 end
@@ -681,14 +687,16 @@ end
     z = Zip(1:2, [1, 3, 1])
     @test vec(collect(support(z))) ==
         [(1, 1), (2, 1), (1, 2), (2, 2), (1, 3), (2, 3)]
-    @test pmf(z, (1, 1)) == 1/3
-    @test pmf(z, (2, 1)) == 1/3
-    @test pmf(z, (1, 2)) == 0
-    @test pmf(z, (2, 2)) == 0
-    @test pmf(z, (1, 3)) == 1/6
-    @test pmf(z, (2, 3)) == 1/6
-    @test pmf(z, (1,))   == 0.0
-    @test pmf(z, (1, 2, 3)) == 0.0
+    for zpmf in (x -> pmf(z, x), pmf(z))
+        @test zpmf((1, 1)) == 1/3
+        @test zpmf((2, 1)) == 1/3
+        @test zpmf((1, 2)) == 0
+        @test zpmf((2, 2)) == 0
+        @test zpmf((1, 3)) == 1/6
+        @test zpmf((2, 3)) == 1/6
+        @test zpmf((1,))   == 0.0
+        @test zpmf((1, 2, 3)) == 0.0
+    end
 end
 
 @testset "Fill" begin

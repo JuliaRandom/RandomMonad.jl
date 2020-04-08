@@ -68,3 +68,96 @@ function pmf(A::Union{AbstractArray,Tuple}, x)
 end
 
 pmf(A::AbstractRange, x) = Float64(x ∈ A) / length(A)
+
+
+## PMF #######################################################################
+
+# a struct to cache values of pmf
+# function, and map interface mostly for printing purposes
+mutable struct PMF{T,D} <: AbstractDict{T,Float64}
+    d::D
+    pmf::Dict{T,Float64}
+    cached::Bool                      # all values cached
+    support::Union{Nothing,Vector{T}} # !== nothing when keys is sorted
+
+    function PMF(d)
+        T = gentype(d)
+        new{T,typeof(d)}(d, Dict{T,Float64}(), false, nothing)
+    end
+end
+
+"""
+    pmf(distribution)
+
+Return the probability mass function of a (discrete) `distribution`
+as a `PMF` object, which caches evaluations.
+
+# Examples
+```jldoctest
+julia> v = [1, 2, 3, 1]; f = pmf(v);
+
+julia> f(1) # result computed from pmf(v, 1) and cached in f
+0.5
+
+julia> f # when displayed, all values are computed and cached
+pmf for [1, 2, 3, 1] with support of length 3:
+  1 => 0.5
+  2 => 0.25
+  3 => 0.25
+```
+"""
+pmf(d) = PMF(d)
+
+function cacheall!(f::PMF)
+    if !f.cached
+        for x in support(f.d)
+            f(x)
+        end
+        f.cached = true
+        if issortable(keytype(f))
+           f.support = sort!(collect(keys(f.pmf)))
+        end
+    end
+    f
+end
+
+function (f::PMF)(x)
+    if haskey(f.pmf, x)
+        f.pmf[x]
+    elseif f.cached
+        0.0
+    else
+        p = pmf(f.d, x)
+        if p != 0.0
+            f.pmf[x] = p
+        end
+        p
+    end
+end
+
+### Dict interface (for printing)
+
+function Base.keys(f::PMF)
+    cacheall!(f)
+    f.support !== nothing ?
+        f.support :
+        keys(f.pmf)
+end
+
+function Base.values(f::PMF)
+    cacheall!(f)
+    f.support !== nothing ?
+        (f.pmf[x] for x in f.support) :
+        values(f.pmf)
+end
+
+Base.getindex(f::PMF, x) = cacheall!(f).pmf[x]
+Base.length(f::PMF) = length(cacheall!(f).pmf)
+
+Base.summary(io::IO, f::PMF) =
+    print(io, "pmf for ", f.d, " with support of length ", length(f))
+
+function Base.iterate(f::PMF, iter=iterate(keys(cacheall!(f))))
+    iter === nothing && return nothing
+    (iter[1] => f.pmf[iter[1]]), iterate(keys(f), iter[2])
+end

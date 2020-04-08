@@ -115,6 +115,9 @@ end
         @test a[1, j] + a[3, j] == 10
         @test a[2, j] == 0
     end
+    # with equal weigths
+    a = rand(Pack(Multinomial(Categorical(3), 10), 20))
+    @test size(a) == (3, 20)
 end
 
 @testset "MixtureModel" begin
@@ -130,11 +133,12 @@ end
     m = MixtureModel((1,2), [Normal(), CloseOpen()])
     @test eltype(m.cat.components) == Distribution{Float64} # not crucial
 
-    m = MixtureModel(2, [Normal(), CloseOpen()])
+    m = MixtureModel((0.5, 0.5), [Normal(), CloseOpen()])
     @test m.cat.cdf == [0.5, 1.0]
-    # test that the first argument doesn't need to have length defined
-    m = MixtureModel(3, Iterators.takewhile(_->true,
-                                            (Normal(), Exponential(), CloseOpen())))
+    # test that the second argument doesn't need to have length defined
+    m = MixtureModel((1/3, 1/3, 1/3),
+                     Iterators.takewhile(_->true,
+                                         (Normal(), Exponential(), CloseOpen())))
     @test m.cat.cdf == [1/3, 2/3, 1.0]
 
     @test_throws ArgumentError MixtureModel([1, 2, 3], [1:3, Normal()])

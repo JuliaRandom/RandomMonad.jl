@@ -49,20 +49,25 @@ rand(rng::AbstractRNG, sp::SamplerTag{Binomial}) =
 
 ## Categorical ###############################################################
 
-struct Categorical{T,A} <: Distribution{T}
+struct Categorical{T,A,VF} <: Distribution{T}
     components::A
-    cdf::Vector{Float64}
+    cdf::VF
 
     # raw constructor
-    global _Categorical(::Type{T}, cdf::Vector{Float64},
-                        components) where {T} =
-        new{T,typeof(components)}(components, cdf)
+    global _Categorical(::Type{T}, cdf, components) where {T} =
+        new{T,typeof(components),typeof(cdf)}(components, cdf)
+
+    function Categorical(n::Number, components=nothing) # equal weigths
+        if components === nothing
+            components = Base.OneTo(Int(n))
+        else
+            Base.require_one_based_indexing(components)
+        end
+        new{eltype(components),typeof(components),Nothing}(components,
+                                                           nothing)
+    end
 
     function Categorical(weigths, components=nothing)
-
-        if weigths isa Number # equal weigths
-            weigths = Iterators.repeated(1, Int(weigths))
-        end
         if !isa(weigths, AbstractArray)
             # necessary for accumulate
             # TODO: will not be necessary anymore in Julia 1.5
@@ -88,9 +93,12 @@ struct Categorical{T,A} <: Distribution{T}
         end
         @assert isapprox(cdf[end], 1.0) # really?
         cdf[end] = 1.0 # to be sure the algo terminates
-        new{eltype(components),typeof(components)}(components, cdf)
+        new{eltype(components),typeof(components),Vector{Float64}}(
+            components, cdf)
     end
 end
+
+ncategories(c::Categorical) = length(c.components)
 
 # unfortunately requires @inline to avoid allocating
 @inline rand(rng::AbstractRNG, sp::SamplerTrivial{<:Categorical}) =
@@ -102,26 +110,34 @@ end
 # if length(cdf) is somewhere between 150 and 200, the following gets faster:
 #   T(searchsortedfirst(sp[].cdf, rand(rng, sp.data)))
 
+Sampler(::Type{RNG}, c::Categorical{T,A,Nothing},
+        n::Repetition) where {RNG<:AbstractRNG,T,A} =
+    SamplerTag{typeof(c)}(Sampler(RNG, c.components, n))
+
+rand(rng::AbstractRNG, sp::SamplerTag{<:Categorical}) =
+    rand(rng, sp.data)
+
 
 ## Multinomial ###############################################################
 
-struct Multinomial <: Distribution{Vector{Int}}
-    cat::Categorical{Int,Base.OneTo{Int}}
+struct Multinomial{C<:Categorical{Int,Base.OneTo{Int}}} <: Distribution{Vector{Int}}
+    cat::C
     n::Int
 end
 
-variate_size(m::Multinomial) = (length(m.cat.cdf),)
+variate_size(m::Multinomial) = (ncategories(m.cat),)
 
 Sampler(RNG::Type{<:AbstractRNG}, m::Multinomial, n::Repetition) =
-    SamplerTag{Multinomial}((cat = Sampler(RNG, m.cat, n),
-                             n   = m.n))
+    SamplerTag{typeof(m)}((cat  = Sampler(RNG, m.cat, n),
+                           # sampler cat doesn't necessary save ncat:
+                           ncat = ncategories(m.cat),
+                           n    = m.n))
 
 function rand!(rng::AbstractRNG, A::AbstractArray{<:Number},
-               sp::SamplerTag{Multinomial}, ::Val{1})
+               sp::SamplerTag{<:Multinomial}, ::Val{1})
     Base.require_one_based_indexing(A)
     cat = sp.data.cat
-    len = length(cat[].cdf)
-    len != length(A) && resize!(A, len)
+    sp.data.ncat != length(A) && resize!(A, sp.data.ncat)
     fill!(A, 0)
     for i = 1:sp.data.n
         @inbounds A[rand(rng, cat)] += 1
@@ -129,8 +145,8 @@ function rand!(rng::AbstractRNG, A::AbstractArray{<:Number},
     A
 end
 
-rand(rng::AbstractRNG, sp::SamplerTag{Multinomial}) =
-    rand!(rng, Vector{Int}(undef, length(sp.data.cat[].cdf)), sp, Val(1))
+rand(rng::AbstractRNG, sp::SamplerTag{<:Multinomial}) =
+    rand!(rng, Vector{Int}(undef, sp.data.ncat), sp, Val(1))
 
 
 ## Mixture Model #############################################################

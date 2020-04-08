@@ -26,16 +26,29 @@ rand(rng::AbstractRNG, sp::SamplerTag{Bernoulli{T}}) where {T} =
     ifelse(rand(rng, CloseOpen12()) < sp.data, one(T), zero(T))
 
 
-## Binomial
+## Binomial ##################################################################
 
 struct Binomial <: Distribution{Int}
     n::Int
     p::Float64
 
     Binomial(n::Integer=1, p::Real=0.5) =
-        0.0 <= p <= 1.0 ? new(n, p) :
-            throw(DomainError(p, "Binomial: parameter p must satisfy 0.0 <= p <= 1.0"))
+        0.0 <= p <= 1.0 ?
+            new(n, p) :
+            throw(DomainError(p,
+                "Binomial: parameter p must satisfy 0.0 <= p <= 1.0"))
 end
+
+support(b::Binomial) =
+    if b.p == 0
+        0:0
+    elseif b.p == 1
+        b.n:b.n
+    else
+        0:b.n
+    end
+
+pmf(b::Binomial, k::Integer) = binomial(b.n, k) * b.p^k * (1-b.p)^(b.n-k)
 
 
 ## sampling

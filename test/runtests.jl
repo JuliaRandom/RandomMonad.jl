@@ -98,6 +98,14 @@ end
     b = Binomial()
     @test b.n == 1
     @test rand(b) ∈ 0:1
+
+    for p in rand(10)
+        for n in rand(Shuffle(1:30), 5)
+            b = Binomial(n, p)
+            @test support(b) == 0:n # unlikely that p ∈ (0.0, 1.0)
+            @test sum(pmf(b, x) for x in support(b)) ≈ 1.0
+        end
+    end
 end
 
 @testset "Categorical" begin

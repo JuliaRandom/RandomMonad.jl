@@ -1,4 +1,4 @@
-## Bernoulli
+## Bernoulli #################################################################
 
 struct Bernoulli{T<:Number} <: Distribution{T}
     p::Float64
@@ -11,6 +11,10 @@ end
 
 Bernoulli(p::Real=0.5) = Bernoulli(Bool, p)
 Bernoulli(::Type{T}, p::Real=0.5) where {T<:Number} = Bernoulli{T}(p)
+
+support(b::Bernoulli{T}) where {T} = T(0):T(1)
+
+pmf(b::Bernoulli, x::Integer) = iszero(x) ? (1.0-b.p) : isone(x) ? b.p : 0.0
 
 
 ### sampling

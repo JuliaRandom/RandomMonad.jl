@@ -79,6 +79,12 @@ end
         r = rand(Bernoulli(T, 1))
         @test r == 1
     end
+
+    b = Bernoulli(0.3)
+    @test support(b) == false:true
+    @test pmf(b, -1) == pmf(b, 2) == 0
+    @test pmf(b, 0) == 0.7
+    @test pmf(b, 1) == 0.3
 end
 
 @testset "Binomial" begin

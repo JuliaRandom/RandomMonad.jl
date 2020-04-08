@@ -41,21 +41,21 @@ using RandomMonad: wrap
 end
 
 @testset "support/pmf" begin
-    for (v0, vs, vp) = (([4, 1, 4, 2], 1:4, [0.5, 0.25, 0.5, 0.25]),
-                        (Number[4, 1.2, 2//3], Number[2//3, 1.2, 4],
-                         [1/3, 1/3, 1/3]),
-                        (Integer[1, 0x3, 2], 1:3, [1/3, 1/3, 1/3]),
-                        ([[1], [1, 3], [4], [1]],
-                         [[1], [1, 3], [4]],
-                         [0.5, 0.25, 0.25]),
-                        (2:4, 2:4, [1/3, 1/3, 1/3]),
-                        ([identity, isless, identity], [identity, isless],
-                         [2/3, 1/3, 2/3]),
-                        (1:4, 1:4, [0.25, 0.25, 0.25, 0.25]),
-                        (3:-1:1, 1:3, [1/3, 1/3, 1/3]))
-        for v in (v0, Tuple(v0))
+    vsp =
+        (([4, 1, 4, 2], 1:4, [0.5, 0.25, 0.5, 0.25]),
+         (Number[4, 1.2, 2//3], Number[2//3, 1.2, 4], [1/3, 1/3, 1/3]),
+         (Integer[1, 0x3, 2], 1:3, [1/3, 1/3, 1/3]),
+         ([[1], [1, 3], [4], [1]], [[1], [1, 3], [4]], [0.5, 0.25, 0.25]),
+         (2:4, 2:4, [1/3, 1/3, 1/3]),
+         ([identity, isless, identity], [identity, isless], [2/3, 1/3, 2/3]),
+         (1:4, 1:4, [0.25, 0.25, 0.25, 0.25]),
+         (3:-1:1, 1:3, [1/3, 1/3, 1/3]))
+
+    for (v0, vs, vp) in vsp
+        for v in (v0, wrap(v0), Tuple(v0), wrap(Tuple(v0)),
+                  Uniform(v0), Uniform(Tuple(v0)))
             @test support(v) == vs
-            for (x, p) in zip(v, vp)
+            for (x, p) in zip(v0, vp)
                 @test pmf(v, x) == p
             end
         end

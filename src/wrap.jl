@@ -57,3 +57,8 @@ wrap(x::Sampler) = x
 Sampler(RNG::Type{<:AbstractRNG},
         d::Union{UniformWrap,UniformType,Wrap}, n::Repetition) =
             Sampler(RNG, d[], n)
+
+## support / pmf
+
+support(d::Union{Wrap,UniformWrap}) = support(d.val)
+pmf(d::Union{Wrap,UniformWrap}, x) = pmf(d.val, x)

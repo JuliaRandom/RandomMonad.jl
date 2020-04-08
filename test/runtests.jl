@@ -676,6 +676,19 @@ end
         v = [rand(sp) for _=1:9]
         @test allunique(v)
     end
+
+    # support & pmf
+    z = Zip(1:2, [1, 3, 1])
+    @test vec(collect(support(z))) ==
+        [(1, 1), (2, 1), (1, 2), (2, 2), (1, 3), (2, 3)]
+    @test pmf(z, (1, 1)) == 1/3
+    @test pmf(z, (2, 1)) == 1/3
+    @test pmf(z, (1, 2)) == 0
+    @test pmf(z, (2, 2)) == 0
+    @test pmf(z, (1, 3)) == 1/6
+    @test pmf(z, (2, 3)) == 1/6
+    @test pmf(z, (1,))   == 0.0
+    @test pmf(z, (1, 2, 3)) == 0.0
 end
 
 @testset "Fill" begin

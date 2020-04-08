@@ -43,6 +43,17 @@ struct Zip{T,X} <: Distribution{T}
     end
 end
 
+
+support(z::Zip) = Iterators.product((support(x) for x in z.xs)...)
+
+function pmf(z::Zip, xs::Tuple)
+    length(xs) == length(z.xs) || return 0.0
+    prod(pmf(z.xs[i], xs[i]) for i in 1:length(xs))
+end
+
+
+### sampling
+
 Sampler(::Type{RNG}, z::Zip, n::Repetition) where {RNG<:AbstractRNG} =
     SamplerTag{typeof(z)}(map(x -> sampler(RNG, x, n), z.xs))
 

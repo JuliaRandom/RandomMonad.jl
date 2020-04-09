@@ -311,6 +311,23 @@ function Lift(f::F, d...) where {F}
 end
 
 
+function pmf(m::Lift)
+    f = PMF(m)
+    pmfs = map(pmf, m.d)
+    for outcomes in Iterators.product(pmfs...)
+        outcomeM = m.f((first(outcome) for outcome in outcomes)...)
+        proba = prod(last.(outcomes))
+        old = get(f.pmf, outcomeM, 0.0)
+        f.pmf[outcomeM] = old + proba
+    end
+    f.cached = true
+    if issortable(keytype(f))
+        f.support = sort!(collect(keys(f.pmf)))
+    end
+    f
+end
+
+
 ### sampling
 
 # Repetition -> Val(1)

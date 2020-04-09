@@ -368,6 +368,15 @@ end
     @test all(rand(d, 30)) do x
         10 <= x < 11 || 20 <= x < 21
     end
+
+    # pmf
+    d = Lift(x -> x^2, -2:2)
+    f = pmf(d)
+    @test keys(f) == [0, 1, 4]
+    @test collect(values(f)) == [0.2, 0.4, 0.4]
+    f = pmf(Lift(sum, Zip(1:3, (-1, 1))))
+    @test f[0] == f[1] == f[3] == f[4] == 1/6
+    @test f[2] == 1/3
 end
 
 @testset "Keep" begin

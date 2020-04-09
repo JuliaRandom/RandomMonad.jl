@@ -51,6 +51,12 @@ function pmf(z::Zip, xs::Tuple)
     prod(pmf(z.xs[i], xs[i]) for i in 1:length(xs))
 end
 
+function Base.show(io::IO, z::Zip)
+    print(io, "Zip(")
+    join(io, z.xs, ", ")
+    print(io, ')')
+end
+
 
 ### sampling
 
@@ -151,6 +157,13 @@ Pack(x, dims::Integer...) where {X} = Pack(x, Dims(dims))
 
 Pack(::Type{X}, dims::Dims{N})    where {X,N} = Pack(Uniform(X), dims)
 Pack(::Type{X}, dims::Integer...) where {X}   = Pack(Uniform(X), Dims(dims))
+
+function Base.show(io::IO, p::Pack)
+    len = length(variate_size(p.x))
+    print(io, "Pack(", p.x, ", ")
+    join(io, p.dims[len+1:end], ", ")
+    print(io, ')')
+end
 
 Sampler(RNG::Type{<:AbstractRNG}, p::Pack, n::Repetition) =
     SamplerTag{typeof(p)}((x    = sampler(RNG, p.x, Val(Inf)),

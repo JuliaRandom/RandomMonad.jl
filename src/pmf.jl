@@ -69,6 +69,16 @@ end
 
 pmf(A::AbstractRange, x) = Float64(x ∈ A) / length(A)
 
+function pmf(A::Union{AbstractArray,Tuple})
+    d = Dict{eltype(A),Float64}()
+    r = 1/length(A)
+    for x in A
+        p = get(d, x, 0.0)
+        d[x] = p + r
+    end
+    PMF(A, d)
+end
+
 
 ## PMF #######################################################################
 
@@ -108,7 +118,10 @@ function PMF(d)
     PMF{T,typeof(d)}(d, Dict{T,Float64}(), false, nothing)
 end
 
-function PMF(d::Distribution{T}, probas::Dict{T,Float64}) where T
+function PMF(d, probas::Dict{T,Float64}) where T
+    gentype(d) == T ||
+        throw(ArgumentError("distribution and dictionary are incompatibles"))
+
     f = PMF(d, probas, true, nothing)
     if issortable(T)
         f.support = sort!(collect(keys(probas)))

@@ -69,24 +69,30 @@ end
 
 pmf(A::AbstractRange, x) = Float64(x ∈ A) / length(A)
 
-function pmf(A::Union{AbstractArray,Tuple})
+function pmf(A::Union{AbstractArray,Tuple}; normalized::Bool=true)
     d = Dict{eltype(A),Float64}()
-    r = 1/length(A)
+    r = normalized ? 1/length(A) : 1.0
     for x in A
         p = get(d, x, 0.0)
         d[x] = p + r
     end
-    PMF(A, d)
+    PMF(A, d, normalized=normalized, count=length(A))
 end
 
 
 ## PMF #######################################################################
 
 """
-    pmf(distribution)
+    pmf(distribution; normalized::Bool=true)
 
 Return the probability mass function of a (discrete) `distribution`
 as a `PMF` object, which caches evaluations.
+If `normalized` is `false`, the evaluations of the function must be
+interpreted not as probabilities but as "weigths", which are computed
+according to the specificities of the `distribution`
+(the sum of the weights somehow correspond to the size of the sample
+space with "multiplicities"). Not all distributions support the
+`normalized` keyword.
 
 # Examples
 ```jldoctest
@@ -100,6 +106,12 @@ pmf for [1, 2, 3, 1] with support of length 3:
   1 => 0.5
   2 => 0.25
   3 => 0.25
+
+julia> pmf(v, normalized=false)
+non-normalized pmf for [1, 2, 3, 1] with support of length 3:
+  1 => 2.0
+  2 => 1.0
+  3 => 1.0
 ```
 """
 pmf(d) = PMF(d)
@@ -110,26 +122,80 @@ mutable struct PMF{T,D} <: AbstractDict{T,Float64}
     d::D
     pmf::Dict{T,Float64}
     cached::Bool                      # all values cached
+    count::Float64                    # sample count with multiplicities
     support::Union{Nothing,Vector{T}} # !== nothing when keys is sorted
 end
 
 function PMF(d)
     T = gentype(d)
-    PMF{T,typeof(d)}(d, Dict{T,Float64}(), false, nothing)
+    PMF{T,typeof(d)}(d, Dict{T,Float64}(), false, 0.0, nothing)
 end
 
-function PMF(d, probas::Dict{T,Float64}) where T
+function PMF(d, probas::Dict{T,Float64};
+             normalized::Bool=true, count=0.0) where T
     gentype(d) == T ||
         throw(ArgumentError("distribution and dictionary are incompatibles"))
-
-    f = PMF(d, probas, true, nothing)
+    count >= 0 || throw(ArgumentError("count must be >= 0"))
+    if !normalized && iszero(count)
+        count = sum(values(probas))
+    end
+    f = PMF(d, probas, true, Float64(normalized ? -count : count), nothing)
     if issortable(T)
         f.support = sort!(collect(keys(probas)))
     end
     f
 end
 
-pmf(d::PMF) = d
+pmf(f::PMF) = f
+
+isnormalized(f::PMF) = f.count <= 0.0
+
+"""
+    normalize!(f::PMF)
+    denormalize!(f::PMF)
+
+Make the evaluations of `f` normalized (their sum is approximately 1.0) or
+denormalized.
+
+# Examples
+```julia-repl
+julia> f = pmf(rand(1:3, 3), normalized=false)
+Non-normalized pmf for [3, 3, 1] with support of length 2:
+  1 => 1.0
+  3 => 2.0
+
+julia> normalize!(f)
+pmf for [3, 3, 1] with support of length 2:
+  1 => 0.333333
+  3 => 0.666667
+
+julia> denormalize!(f)
+Non-normalized pmf for [3, 3, 1] with support of length 2:
+  1 => 1.0
+  3 => 2.0
+```
+"""
+normalize!, denormalize!
+
+function normalize!(f::PMF)
+    isnormalized(f) && return f
+    replace!(f.pmf) do x
+        first(x) => last(x) / f.count
+    end
+    f.count = -f.count
+    f
+end
+
+function denormalize!(f::PMF)
+    f.count > 0 && return f
+    iszero(f.count) &&
+        throw(ArgumentError("count unavailable for denormalizing"))
+    f.count = -f.count
+    replace!(f.pmf) do x
+        first(x) => last(x) * f.count
+    end
+    f
+end
 
 function cacheall!(f::PMF)
     if !f.cached
@@ -180,8 +246,11 @@ end
 Base.getindex(f::PMF, x) = cacheall!(f).pmf[x]
 Base.length(f::PMF) = length(cacheall!(f).pmf)
 
-Base.summary(io::IO, f::PMF) =
+function Base.summary(io::IO, f::PMF)
+    isnormalized(f) ||
+        print(io, "non-normalized ")
     print(io, "pmf for ", f.d, " with support of length ", length(f))
+end
 
 function Base.iterate(f::PMF, iter=iterate(keys(cacheall!(f))))
     iter === nothing && return nothing

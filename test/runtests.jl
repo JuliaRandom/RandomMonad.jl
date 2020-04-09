@@ -81,6 +81,19 @@ end
     end
     # Complex can't be sorted (just test pmf doesn't error)
     @test sum(values(pmf(randn(ComplexF64, 8)))) == 1.0
+
+    # normalization
+    f = pmf(rand(8), normalized=false)
+    @test all(==(1.0), values(f))
+    @test length(keys(f)) == 8
+    g = normalize!(f)
+    @test g === f
+    @test all(==(0.125), values(f))
+    @test length(keys(f)) == 8
+    g = denormalize!(f)
+    @test g === f
+    @test all(==(1.0), values(f))
+    @test length(keys(f)) == 8
 end
 
 @testset "Bernoulli" begin

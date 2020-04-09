@@ -79,12 +79,21 @@ mutable struct PMF{T,D} <: AbstractDict{T,Float64}
     pmf::Dict{T,Float64}
     cached::Bool                      # all values cached
     support::Union{Nothing,Vector{T}} # !== nothing when keys is sorted
-
-    function PMF(d)
-        T = gentype(d)
-        new{T,typeof(d)}(d, Dict{T,Float64}(), false, nothing)
-    end
 end
+
+function PMF(d)
+    T = gentype(d)
+    PMF{T,typeof(d)}(d, Dict{T,Float64}(), false, nothing)
+end
+
+function PMF(d::Distribution{T}, probas::Dict{T,Float64}) where T
+    f = PMF(d, probas, true, nothing)
+    if issortable(T)
+        f.support = sort!(collect(keys(probas)))
+    end
+    f
+end
+
 
 """
     pmf(distribution)

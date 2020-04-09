@@ -322,19 +322,15 @@ end
 
 
 function pmf(m::Lift)
-    f = PMF(m)
+    probas = Dict{gentype(m),Float64}()
     pmfs = map(pmf, m.d)
     for outcomes in Iterators.product(pmfs...)
         outcomeM = m.f((first(outcome) for outcome in outcomes)...)
         proba = prod(last.(outcomes))
-        old = get(f.pmf, outcomeM, 0.0)
-        f.pmf[outcomeM] = old + proba
+        old = get(probas, outcomeM, 0.0)
+        probas[outcomeM] = old + proba
     end
-    f.cached = true
-    if issortable(keytype(f))
-        f.support = sort!(collect(keys(f.pmf)))
-    end
-    f
+    PMF(m, probas)
 end
 
 function Base.show(io::IO, m::Lift)
@@ -402,13 +398,7 @@ function pmf(k::Keep)
     filter!(x -> k.f(first(x)), dpmf)
     p0 = sum(values(dpmf))
     replace!(x -> x[1] => x[2]/p0, dpmf)
-    kpmf = PMF(k)
-    kpmf.pmf = dpmf
-    kpmf.cached = true
-    if issortable(keytype(dpmf))
-        kpmf.support = sort!(collect(keys(dpmf)))
-    end
-    kpmf
+    PMF(k, dpmf)
 end
 
 Base.show(io::IO, k::Keep) = print(io, "Keep(", k.f, ", ", k.d, ')')

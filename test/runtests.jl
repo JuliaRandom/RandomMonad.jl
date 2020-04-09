@@ -58,6 +58,8 @@ end
                   Uniform(v0), Uniform(Tuple(v0)))
             @test support(v) == vs
             fpmf = pmf(v)
+            @test pmf(fpmf) === fpmf
+            @test issubset(support(fpmf), vs)
             for (x, p) in zip(v0, vp)
                 @test pmf(v, x) == p
                 @test fpmf(x) == p

@@ -72,6 +72,28 @@ pmf(A::AbstractRange, x) = Float64(x ∈ A) / length(A)
 
 ## PMF #######################################################################
 
+"""
+    pmf(distribution)
+
+Return the probability mass function of a (discrete) `distribution`
+as a `PMF` object, which caches evaluations.
+
+# Examples
+```jldoctest
+julia> v = [1, 2, 3, 1]; f = pmf(v);
+
+julia> f(1) # result computed from pmf(v, 1) and cached in f
+0.5
+
+julia> f # when displayed, all values are computed and cached
+pmf for [1, 2, 3, 1] with support of length 3:
+  1 => 0.5
+  2 => 0.25
+  3 => 0.25
+```
+"""
+pmf(d) = PMF(d)
+
 # a struct to cache values of pmf
 # function, and map interface mostly for printing purposes
 mutable struct PMF{T,D} <: AbstractDict{T,Float64}
@@ -94,28 +116,7 @@ function PMF(d::Distribution{T}, probas::Dict{T,Float64}) where T
     f
 end
 
-
-"""
-    pmf(distribution)
-
-Return the probability mass function of a (discrete) `distribution`
-as a `PMF` object, which caches evaluations.
-
-# Examples
-```jldoctest
-julia> v = [1, 2, 3, 1]; f = pmf(v);
-
-julia> f(1) # result computed from pmf(v, 1) and cached in f
-0.5
-
-julia> f # when displayed, all values are computed and cached
-pmf for [1, 2, 3, 1] with support of length 3:
-  1 => 0.5
-  2 => 0.25
-  3 => 0.25
-```
-"""
-pmf(d) = PMF(d)
+pmf(d::PMF) = d
 
 function cacheall!(f::PMF)
     if !f.cached
@@ -143,6 +144,9 @@ function (f::PMF)(x)
         p
     end
 end
+
+support(f::PMF) = keys(f)
+
 
 ### Dict interface (for printing)
 

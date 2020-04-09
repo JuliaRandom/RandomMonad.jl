@@ -125,6 +125,13 @@ function rand!(rng::AbstractRNG, a::AbstractArray, sp::SamplerTag{<:Fill}, ::Val
 end
 
 
+function Base.show(io::IO, f::Fill)
+    print(io, "Fill(", f.x, ", ")
+    join(io, f.dims, ", ")
+    print(io, ')')
+end
+
+
 ## Pack ######################################################################
 
 struct Pack{X,T,N} <: Distribution{Array{T,N}}

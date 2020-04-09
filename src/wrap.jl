@@ -26,6 +26,8 @@ const ImplicitUniform = Union{AbstractArray,AbstractDict,AbstractSet,
 isuniform(::Type{T}) where {T} = Val(false)
 isuniform(::Type{T}) where {T<:ImplicitUniform} = Val(true)
 
+Base.show(io::IO, x::Uniform) = print(io, "Uniform($(x[]))")
+
 
 ## Wrap
 

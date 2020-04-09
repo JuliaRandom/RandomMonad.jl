@@ -32,6 +32,8 @@ end
 
 rand(::AbstractRNG, sp::SamplerTrivial{<:Pure}) = sp[].x
 
+Base.show(io::IO, x::Pure) = print(io, "Pure($(x.x))")
+
 
 ## algebra ###################################################################
 
@@ -176,6 +178,9 @@ function rand(rng::AbstractRNG, sp::SamplerTag{<:Bind})
     rand(rng, sp.data.f(x))
 end
 
+Base.show(io::IO, b::Bind) =
+    print(io, "Bind{", gentype(b), "}(", b.f, ", ", b.x, ')')
+
 
 ## Join ######################################################################
 
@@ -231,6 +236,8 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Join}) =
     rand(rng, rand(rng, sp.data))
 
 
+Base.show(io::IO, j::Join) = print(io, "Join(", j.x, ')')
+
 
 ## Thunk #####################################################################
 
@@ -272,6 +279,9 @@ end
 
 rand(rng::AbstractRNG, sp::SamplerTrivial{<:Thunk}) =
     rand(rng, sp[].f())
+
+
+Base.show(io::IO, t::Thunk) = print(io, "Thunk{$(gentype(t))}(", t.f, ')')
 
 
 ## Lift ######################################################################
@@ -325,6 +335,12 @@ function pmf(m::Lift)
         f.support = sort!(collect(keys(f.pmf)))
     end
     f
+end
+
+function Base.show(io::IO, m::Lift)
+    print(io, "Lift{$(gentype(m))}(", m.f, ", ")
+    join(io, m.d, ", ")
+    print(io, ')')
 end
 
 
@@ -395,6 +411,8 @@ function pmf(k::Keep)
     kpmf
 end
 
+Base.show(io::IO, k::Keep) = print(io, "Keep(", k.f, ", ", k.d, ')')
+
 
 ### sampling
 
@@ -462,6 +480,15 @@ rand(rng::AbstractRNG, sp::SamplerTag{<:Map{T}}) where {T} =
     convert(T, map(sp.data.f, (rand(rng, d) for d in sp.data.d)...))
 
 
+### misc
+
+function Base.show(io::IO, m::Map)
+    print(io, "Map{", gentype(m), "}(", m.f, ", ")
+    join(io, m.d, ", ")
+    print(io, ')')
+end
+
+
 ## Filter ####################################################################
 
 """
@@ -527,6 +554,11 @@ reset!(sp::SamplerTag{<:Filter}, n...) = (reset!(sp.data.d, n...); sp)
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Filter{T}}) where {T} =
     convert(T, filter(sp.data.f, rand(rng, sp.data.d)))
+
+
+### misc
+
+Base.show(io::IO, f::Filter) = print(io, "Filter(", f.f, ", ", f.d, ')')
 
 
 ## Reduce ####################################################################

@@ -258,6 +258,9 @@ Normal(μ::T, σ::T) where {T<:NormalTypes} = Normalμσ(μ, σ)
 Normal(μ::T, σ::T) where {T<:Real} = Normalμσ(AbstractFloat(μ), AbstractFloat(σ))
 Normal(μ, σ) = Normal(promote(μ, σ)...)
 
+Base.show(io::IO, n::Normal01) = print(io, "Normal()")
+Base.show(io::IO, n::Normalμσ) = print(io, "Normal(", n.μ, ", ", n.σ, ')')
+
 
 ### sampling
 

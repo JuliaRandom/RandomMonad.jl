@@ -128,27 +128,31 @@ end
 
 function PMF(d)
     T = gentype(d)
-    PMF{T,typeof(d)}(d, Dict{T,Float64}(), false, 0.0, nothing)
+    PMF{T,typeof(d)}(d, Dict{T,Float64}(), false, -1.0, nothing)
 end
 
 function PMF(d, probas::Dict{T,Float64};
-             normalized::Bool=true, count=0.0) where T
+             normalized::Bool=true, count=nothing) where T
     gentype(d) == T ||
         throw(ArgumentError("distribution and dictionary are incompatibles"))
-    count >= 0 || throw(ArgumentError("count must be >= 0"))
-    if !normalized && iszero(count)
-        count = sum(values(probas))
+
+    if count === nothing
+        if normalized
+            count = 1.0
+        else
+            count = sum(values(probas))
+        end
+    else
+        count > 0 || throw(ArgumentError("count must be > 0"))
     end
-    f = PMF(d, probas, true, Float64(normalized ? -count : count), nothing)
-    if issortable(T)
-        f.support = sort!(collect(keys(probas)))
-    end
-    f
+
+    resort!(PMF(d, probas, true, Float64(normalized ? -count : count),
+                nothing))
 end
 
 pmf(f::PMF) = f
 
-isnormalized(f::PMF) = f.count <= 0.0
+isnormalized(f::PMF) = f.count < 0.0 || f.count == 1.0 # use isapprox ?
 
 """
     normalize!(f::PMF)
@@ -188,13 +192,36 @@ end
 
 function denormalize!(f::PMF)
     f.count > 0 && return f
-    iszero(f.count) &&
-        throw(ArgumentError("count unavailable for denormalizing"))
     f.count = -f.count
     replace!(f.pmf) do x
         first(x) => last(x) * f.count
     end
     f
+end
+
+function Base.filter!(g, f::PMF)
+    cacheall!(f)
+    # TODO: optimize (avoid two passes over f.pmf)
+    s = 0.0
+    replace!(f.pmf) do kv
+        if g(kv[1])
+            kv
+        else
+            s += kv[2]
+            kv[1] => 0.0
+        end
+    end
+    filter!(x -> x[2] != 0.0, f.pmf)
+    s == 0.0 && return f # nothing happened
+    if f.count > 0 # non-normalized
+        f.count -= s
+    else # normalized
+        f.count = 1 - s # make non-normalized
+        # this allows to keep probability-like values, but which don't
+        # sum up to 1.0, so f can't be considered normalized anymore
+        # old value of count is totally discarded
+    end
+    resort!(f)
 end
 
 function cacheall!(f::PMF)
@@ -203,9 +230,15 @@ function cacheall!(f::PMF)
             f(x)
         end
         f.cached = true
-        if issortable(keytype(f))
-           f.support = sort!(collect(keys(f.pmf)))
-        end
+        resort!(f)
+    end
+    f
+end
+
+function resort!(f::PMF)
+    @assert f.cached
+    if issortable(keytype(f))
+        f.support = sort!(collect(keys(f.pmf)))
     end
     f
 end

@@ -1,7 +1,7 @@
 using Test
 using Random: Random, gentype, MersenneTwister, rand!, Sampler, randstring
 using RandomMonad
-using RandomMonad: wrap
+using RandomMonad: wrap, isnormalized
 
 const rng = MersenneTwister()
 
@@ -94,6 +94,36 @@ end
     @test g === f
     @test all(==(1.0), values(f))
     @test length(keys(f)) == 8
+
+    # filter!
+    f = pmf([1, 2, 3, 1])
+    @test isnormalized(f)
+    g = filter!(isodd, f)
+    @test !isnormalized(f)
+    @test f === g
+    @test keys(f)  == [1, 3]
+    @test collect(values(f)) == [1/2, 1/4]
+    normalize!(f)
+    @test isnormalized(f)
+    @test keys(f)  == [1, 3]
+    @test collect(values(f)) == [2/3, 1/3]
+    denormalize!(f)
+    @test collect(values(f)) == [1/2, 1/4]
+
+    f = pmf([1, 2, 3, 1])
+    denormalize!(f)
+    @test !isnormalized(f)
+    g = filter!(isodd, f)
+    @test !isnormalized(f)
+    @test f === g
+    @test keys(f)  == [1, 3]
+    @test collect(values(f)) == [2.0, 1.0]
+    normalize!(f)
+    @test isnormalized(f)
+    @test keys(f)  == [1, 3]
+    @test collect(values(f)) == [2/3, 1/3]
+    denormalize!(f)
+    @test collect(values(f)) == [2.0, 1.0]
 end
 
 @testset "Bernoulli" begin

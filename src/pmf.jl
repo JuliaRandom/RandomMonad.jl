@@ -25,7 +25,7 @@ function support end
 
 issortable(::Type) = false
 
-for T in (Number,AbstractChar,String)
+for T in (Real,AbstractChar,String)
     @eval begin
         issortable(::Type{<:$T}) = true
         issortable(::Type{<:Tuple{Vararg{$T}}}) = true

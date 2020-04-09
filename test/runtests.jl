@@ -45,7 +45,7 @@ end
 @testset "support/pmf" begin
     vsp =
         (([4, 1, 4, 2], 1:4, [0.5, 0.25, 0.5, 0.25]),
-         (Number[4, 1.2, 2//3], Number[2//3, 1.2, 4], [1/3, 1/3, 1/3]),
+         (Real[4, 1.2, 2//3], Real[2//3, 1.2, 4], [1/3, 1/3, 1/3]),
          (Integer[1, 0x3, 2], 1:3, [1/3, 1/3, 1/3]),
          ([[1], [1, 3], [4], [1]], [[1], [1, 3], [4]], [0.5, 0.25, 0.25]),
          (2:4, 2:4, [1/3, 1/3, 1/3]),
@@ -79,6 +79,8 @@ end
             @test xs == rand(rng, fpmf, 3)
         end
     end
+    # Complex can't be sorted (just test pmf doesn't error)
+    @test sum(values(pmf(randn(ComplexF64, 8)))) == 1.0
 end
 
 @testset "Bernoulli" begin

@@ -3,8 +3,8 @@ module RandomMonad
 export Distribution
 
 export Bernoulli, Bind, Binomial, Categorical, CloseClose, CloseOpen, counts,
-       Counts, Exponential, Fill, Filter, FisherYates, Iterate, Join,
-       Keep, Lift, Map,
+       Counts, discretize!, Exponential, Fill, Filter, FisherYates, Iterate,
+       Join, Keep, Lift, Map,
        MixtureModel, Multinomial, Normal, OpenClose, OpenOpen, Pack,
        pmf, Poisson, Pure,
        Reduce, SelfAvoid, Shuffle, SubIter, SubSeq, support, Thunk, Uniform,
@@ -12,6 +12,8 @@ export Bernoulli, Bind, Binomial, Categorical, CloseClose, CloseOpen, counts,
 
 using Random: AbstractRNG, gentype, randexp, randn, Random, randsubseq!,
               Repetition
+
+using Statistics: mean
 
 import Random: rand, rand!, Sampler
 
@@ -125,6 +127,7 @@ include("floatintervals.jl")
 include("containers.jl")
 include("adapters.jl")
 include("sequences.jl")
+include("util.jl")
 
 
 end # module

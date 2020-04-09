@@ -839,3 +839,8 @@ end
         end
     end
 end
+
+@testset "discretize!" begin # TODO: more tests
+    f = pmf(discretize!(randn(1000), 10))
+    @test length(keys(f)) == 10
+end

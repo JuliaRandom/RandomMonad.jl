@@ -395,6 +395,12 @@ end
         @test allunique(a)
         @test all(x -> x < 5, a)
     end
+
+    # pmf
+    f = pmf(Keep(iseven, 1:9))
+    @test f == Dict(2=>1/4, 4=>1/4, 6=>1/4, 8=>1/4)
+    f = pmf(Keep(isodd, 1:9))
+    @test f == Dict((1:2:9) .=> prevfloat(0.2)) # prevfloat b/c of rounding
 end
 
 @testset "Map" begin

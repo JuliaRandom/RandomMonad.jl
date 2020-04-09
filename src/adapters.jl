@@ -381,6 +381,21 @@ end
 Keep(f::F, d) where {F} = Keep(f, Uniform(d))
 
 
+function pmf(k::Keep)
+    dpmf = cacheall!(pmf(k.d)).pmf
+    filter!(x -> k.f(first(x)), dpmf)
+    p0 = sum(values(dpmf))
+    replace!(x -> x[1] => x[2]/p0, dpmf)
+    kpmf = PMF(k)
+    kpmf.pmf = dpmf
+    kpmf.cached = true
+    if issortable(keytype(dpmf))
+        kpmf.support = sort!(collect(keys(dpmf)))
+    end
+    kpmf
+end
+
+
 ### sampling
 
 Sampler(::Type{RNG}, d::Keep, n::Repetition) where {RNG<:AbstractRNG} =

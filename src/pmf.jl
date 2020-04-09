@@ -170,3 +170,14 @@ function Base.iterate(f::PMF, iter=iterate(keys(cacheall!(f))))
     iter === nothing && return nothing
     (iter[1] => f.pmf[iter[1]]), iterate(keys(f), iter[2])
 end
+
+
+## sampling
+
+# hack: PMF <: AbstractDict for printing purposes, but we want it to be
+# also a distribution, so we need to specialize gentype
+
+Sampler(::Type{RNG}, f::PMF, n::Repetition) where {RNG<:AbstractRNG} =
+    Sampler(RNG, f.d, n)
+
+Random.gentype(::Type{<:PMF{T}}) where {T} = T

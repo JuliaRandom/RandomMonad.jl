@@ -1,7 +1,9 @@
 using Test
-using Random: Random, MersenneTwister, rand!, Sampler, randstring
+using Random: Random, gentype, MersenneTwister, rand!, Sampler, randstring
 using RandomMonad
 using RandomMonad: wrap
+
+const rng = MersenneTwister()
 
 @testset "Uniform/Wrap" begin
     for W = (Uniform, wrap)
@@ -61,6 +63,18 @@ end
                 @test fpmf(x) == p
                 @test fpmf[x] == p # not public API (yet)
             end
+
+            T = gentype(fpmf)
+            @test T == gentype(v)
+            seed = rand(UInt)
+            Random.seed!(rng, seed)
+            x, xs = rand(rng, fpmf), rand(rng, fpmf, 3)
+            @test x isa T
+            @test xs isa Vector{T}
+
+            Random.seed!(rng, seed)
+            @test x == rand(rng, fpmf)
+            @test xs == rand(rng, fpmf, 3)
         end
     end
 end

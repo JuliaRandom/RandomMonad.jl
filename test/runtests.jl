@@ -594,6 +594,8 @@ end
                     [1, 0, 0], [1, 0, 1], [1, 1]])
     f = pmf(halting)
     @test collect(values(f)) ≈ [4, 2, 1, 2, 2, 1, 6] / 18
+    denormalize!(f)
+    @test collect(values(f)) ≈ [4, 2, 1, 2, 2, 1, 6]
 end
 
 @testset "Iterate" begin

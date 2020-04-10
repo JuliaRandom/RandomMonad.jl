@@ -726,11 +726,12 @@ end
 function pmf(it::Iterated{T}; normalized::Bool=true) where T
     itpmf = Dict{T,Float64}()
     dist, st = it.f(Random.GLOBAL_RNG)
-    iterated_pmf!(itpmf, it.f, 1.0, pmf(dist), st)
-    PMF(it, itpmf)
+    cnt = iterated_pmf!(itpmf, it.f, 1.0, pmf(dist), st)
+    PMF(it, itpmf, count=cnt)
 end
 
 function iterated_pmf!(itpmf, f, p0, distpmf, st0)
+    l = 1
     for (x, p) in distpmf
         p1 = p0 * p
         p1 == 0.0 && continue
@@ -740,7 +741,8 @@ function iterated_pmf!(itpmf, f, p0, distpmf, st0)
             old = get(itpmf, st, 0.0)
             itpmf[st] = old + p1
         else
-            iterated_pmf!(itpmf, f, p1, pmf(dist), st)
+            l = lcm(l, iterated_pmf!(itpmf, f, p1, pmf(dist), st))
         end
     end
+    l * Int(-distpmf.count)
 end

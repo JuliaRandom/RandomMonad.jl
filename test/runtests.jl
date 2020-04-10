@@ -822,6 +822,18 @@ end
     copy!(b, a)
     rand!(a, Fill(inner, 4), Val(2))
     @test a[1] === b[1]
+
+    # pmf
+    f = pmf(Fill(1:2, 3))
+    @test keys(f) ==
+        collect.(sort(vec(collect(Iterators.product(1:2, 1:2, 1:2)))))
+    @test all(==(1/8), values(f))
+    @test isnormalized(f)
+    denormalize!(f)
+    @test all(==(1.0), values(f))
+    f = pmf(Fill([1, 1, 2], 2), normalized=false)
+    @test Dict(f) ==
+        Dict([2, 2] => 1.0,[1, 1] => 4.0,[1, 2] => 2.0,[2, 1] => 2.0)
 end
 
 @testset "variate_size" begin

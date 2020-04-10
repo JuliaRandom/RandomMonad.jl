@@ -130,6 +130,22 @@ function rand!(rng::AbstractRNG, a::AbstractArray, sp::SamplerTag{<:Fill}, ::Val
     return a
 end
 
+# TODO: create a lazy fpmf dict which doesn't store all values, but only
+# the pmf of f.x, it's then cheap to compute values and keys on the fly
+function pmf(f::Fill; normalized=true)
+    A = eltype(f)
+    xf = pmf(f.x, normalized=normalized)
+    fpmf = Dict{A,Float64}()
+    n = prod(f.dims)
+    # TODO: don't use Iterators.product, which would need "static" n
+    for xs in Iterators.product(Iterators.repeated(xf, n)...)
+        e = A(undef, f.dims)
+        a = copyto!(e, first.(xs))
+        @assert !haskey(fpmf, a)
+        fpmf[a] = prod(last, xs)
+    end
+    PMF(f, fpmf, normalized=normalized; count=abs(xf.count)^n)
+end
 
 function Base.show(io::IO, f::Fill)
     print(io, "Fill(", f.x, ", ")

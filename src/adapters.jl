@@ -667,6 +667,46 @@ end
 
 ## Iterated ##################################################################
 
+"""
+    Iterated{T}(f) :: Distribution{T}
+
+Create a distribution representing the process of iterating `f`
+an arbitrary number of times. The function `f` must have two methods,
+one taking one `AbstractRNG` argument and the other taking two arguments.
+When sampling an `Iterated` object, the first step consists in
+calling `dist, st = f(rng)` where `rng` is the RNG which will be used.
+`dist` is the distribution to use in the next iteration,
+and `st` is an arbitrary object, which
+can be any state that `f` needs in subsequent calls. Then, the
+following steps are repeated in a loop until `dist === nothing`:
++ `x = rand(rng, dist)`
++ `dist, st = f(x, st)`
+When `dist === nothing`, `st` is interpreted as the return value of the
+process.
+
+# Examples
+```julia-repl
+julia> geom(p) = Iterated{Int}(
+            # implement the geometric distribution
+            begin
+                f(_) = Bernoulli(p), 0
+                f(v, i) = v ? (nothing, i) : (Bernoulli(p), i+1)
+            end);
+
+julia> pmf(rand(geom(0.8), 100))
+pmf for [0, 0, 0, 0, 0, 0, 0, 0, 1, 0  …  0, 0, 1, 0, 0, 0, 0, 0, 0, 0] with support of length 5:
+  0 => 0.81
+  1 => 0.13
+  2 => 0.03
+  3 => 0.01
+  4 => 0.02
+```
+
+!!! note
+    In the first step, i.e. `dist, st = f(rng)`, `rng` can be used within
+    `f` to create a `Sampler` object, which can then be returned as `dist`
+    and passed as `st` (or stored within `st`) across calls.
+"""
 struct Iterated{T,F} <: Distribution{T}
     f::F
 
@@ -675,7 +715,7 @@ end
 
 function rand(rng::AbstractRNG, sp::SamplerTrivial{<:Iterated{T}})::T where T
     it = sp[]
-    dist, st = it.f(nothing)
+    dist, st = it.f(rng)
     while dist !== nothing
         x = rand(rng, dist)
         dist, st = it.f(x, st)

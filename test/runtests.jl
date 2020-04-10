@@ -1,5 +1,5 @@
 using Test
-using Random: Random, gentype, MersenneTwister, rand!, Sampler, randstring
+using Random: Random, AbstractRNG, gentype, MersenneTwister, rand!, Sampler, randstring
 using RandomMonad
 using RandomMonad: wrap, isnormalized
 
@@ -562,10 +562,17 @@ end
 
 @testset "Iterated" begin
     # simulates Geometric distribution
+    # tests that one can use samplers, even if quite useless here
     geom(p) = Iterated{Int}(
         begin
-            it(_) = Bernoulli(p), 0
-            it(v, i) = v ? (nothing, i) : (Bernoulli(p), i+1)
+            function it(rng)
+                sp = Sampler(rng, Bernoulli(p))
+                sp, (sp, 0)
+             end
+
+            it(v, sp_i) = v ?
+                (nothing, sp_i[2]) :
+                (sp_i[1], (sp_i[1], sp_i[2] + 1))
         end)
     f = pmf(rand(geom(0.8), 100), normalized=false)
     @test f(0) > 55 # > about 60 in maybe 1 in a million cases
@@ -574,7 +581,7 @@ end
     # your chance of success increases if you won last game
     halting = Iterated{Vector{Bool}}(
         function (v, res=Bool[])
-            if v === nothing
+            if v isa AbstractRNG
                 return Bernoulli(Bool), res
             else
                 push!(res, v)

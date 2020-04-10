@@ -16,6 +16,16 @@ support(b::Bernoulli{T}) where {T} = T(0):T(1)
 
 pmf(b::Bernoulli, x::Integer) = iszero(x) ? (1.0-b.p) : isone(x) ? b.p : 0.0
 
+# experimental
+function pmf_count(b::Bernoulli)
+    p = b.p
+    p == 0.0 && return 1.0
+    n = 1.0/p;       isinteger(n) && return n
+    n = 2.0/p;       isinteger(n) && return n
+    n = 1.0 - 1.0/p; isinteger(n) && return n
+    n = 1.0 - 2.0/p; isinteger(n) && return n
+    return 1.0
+end
 
 ### sampling
 

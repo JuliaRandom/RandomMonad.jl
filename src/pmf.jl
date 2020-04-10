@@ -61,6 +61,8 @@ julia> [pmf([1, 2, 4, 1], x) for x=0:4]
 """
 pmf(distribution, x)
 
+pmf_count(distribution) = 1.0
+
 function pmf(A::Union{AbstractArray,Tuple}, x)
     x ∈ A || return 0.0
     c = count(isequal(x), A)
@@ -128,7 +130,7 @@ end
 
 function PMF(d)
     T = gentype(d)
-    PMF{T,typeof(d)}(d, Dict{T,Float64}(), false, -1.0, nothing)
+    PMF{T,typeof(d)}(d, Dict{T,Float64}(), false, -pmf_count(d), nothing)
 end
 
 function PMF(d, probas::Dict{T,Float64};
@@ -182,6 +184,7 @@ Non-normalized pmf for [3, 3, 1] with support of length 2:
 normalize!, denormalize!
 
 function normalize!(f::PMF)
+    cacheall!(f)
     isnormalized(f) && return f
     replace!(f.pmf) do x
         first(x) => last(x) / f.count
@@ -191,6 +194,7 @@ function normalize!(f::PMF)
 end
 
 function denormalize!(f::PMF)
+    cacheall!(f)
     f.count > 0 && return f
     f.count = -f.count
     replace!(f.pmf) do x

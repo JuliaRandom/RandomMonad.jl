@@ -4,7 +4,7 @@ export Distribution
 
 export Bernoulli, Bind, Binomial, Categorical, CloseClose, CloseOpen, counts,
        Counts, discretize!, Exponential, Fill, Filter, FisherYates, Iterate,
-       Join, Keep, Lift, Map,
+       Iterated, Join, Keep, Lift, Map,
        MixtureModel, Multinomial, Normal, OpenClose, OpenOpen, Pack,
        pmf, Poisson, Pure,
        Reduce, SelfAvoid, Shuffle, SubIter, SubSeq, support, Thunk, Uniform,

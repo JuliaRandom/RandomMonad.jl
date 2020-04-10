@@ -560,6 +560,33 @@ end
     @test allunique(rand(u, 2))
 end
 
+@testset "Iterated" begin
+    # simulates Geometric distribution
+    geom(p) = Iterated{Int}(
+        begin
+            it(_) = Bernoulli(p), 0
+            it(v, i) = v ? (nothing, i) : (Bernoulli(p), i+1)
+        end)
+    f = pmf(rand(geom(0.8), 100), normalized=false)
+    @test f(0) > 55 # > about 60 in maybe 1 in a million cases
+
+    # result of games in three parts where one must win at least twice
+    # your chance of success increases if you won last game
+    halting = Iterated{Vector{Bool}}(
+        function (v, res=Bool[])
+            if v === nothing
+                return Bernoulli(Bool), res
+            else
+                push!(res, v)
+                (sum(res) == 2 || length(res) == 3) && return nothing, res
+                Bernoulli(Bool, v ? 2/3 : 1/3), res
+            end
+        end)
+    @test issubset(rand(halting, 5),
+                   [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
+                    [1, 0, 0], [1, 0, 1], [1, 1]])
+end
+
 @testset "Iterate" begin
     it = Iterate(1:0)
     @test_throws ArgumentError rand(it)

@@ -630,7 +630,7 @@ counts(x) = rand(Counts(x))
 counts(x, n) = rand(Counts(Fill(x, n)))
 
 
-## Unique
+## Unique ####################################################################
 
 struct Unique{T,X} <: Distribution{T}
     x::X
@@ -662,4 +662,23 @@ function rand(rng::AbstractRNG, sp::SamplerTag{<:Unique})
         push!(seen, x)
         return x
     end
+end
+
+
+## Iterated ##################################################################
+
+struct Iterated{T,F} <: Distribution{T}
+    f::F
+
+    Iterated{T}(f::F) where {T,F} = new{T,F}(f)
+end
+
+function rand(rng::AbstractRNG, sp::SamplerTrivial{<:Iterated{T}})::T where T
+    it = sp[]
+    dist, st = it.f(nothing)
+    while dist !== nothing
+        x = rand(rng, dist)
+        dist, st = it.f(x, st)
+    end
+    st
 end

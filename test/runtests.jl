@@ -592,6 +592,8 @@ end
     @test issubset(rand(halting, 5),
                    [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
                     [1, 0, 0], [1, 0, 1], [1, 1]])
+    f = pmf(halting)
+    @test collect(values(f)) ≈ [4, 2, 1, 2, 2, 1, 6] / 18
 end
 
 @testset "Iterate" begin

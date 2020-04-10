@@ -722,3 +722,25 @@ function rand(rng::AbstractRNG, sp::SamplerTrivial{<:Iterated{T}})::T where T
     end
     st
 end
+
+function pmf(it::Iterated{T}; normalized::Bool=true) where T
+    itpmf = Dict{T,Float64}()
+    dist, st = it.f(Random.GLOBAL_RNG)
+    iterated_pmf!(itpmf, it.f, 1.0, pmf(dist), st)
+    PMF(it, itpmf)
+end
+
+function iterated_pmf!(itpmf, f, p0, distpmf, st0)
+    for (x, p) in distpmf
+        p1 = p0 * p
+        p1 == 0.0 && continue
+        st = deepcopy(st0)
+        dist, st = f(x, st)
+        if dist === nothing
+            old = get(itpmf, st, 0.0)
+            itpmf[st] = old + p1
+        else
+            iterated_pmf!(itpmf, f, p1, pmf(dist), st)
+        end
+    end
+end

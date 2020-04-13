@@ -81,6 +81,8 @@ end
     end
     # Complex can't be sorted (just test pmf doesn't error)
     @test sum(values(pmf(randn(ComplexF64, 8)))) == 1.0
+    # tuple of arrays can be sorted
+    @test support(([3], [1])) == [[1], [3]]
 
     # normalization
     f = pmf(rand(8), normalized=false)

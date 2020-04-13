@@ -37,7 +37,7 @@ support(x::Union{AbstractArray{<:Integer},Tuple{Vararg{Integer}}}) =
     UnitRange(extrema(x)...)
 
 support(x::Union{AbstractArray,Tuple})  =
-    issortable(typeof(x)) ?
+    issortable(eltype(x)) ?
         unique!(sort!(vec(collect(x)))) :
         unique!(vec(collect(x)))
 

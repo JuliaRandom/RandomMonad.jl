@@ -14,6 +14,8 @@ const rng = MersenneTwister()
                              Set(1:3)    => 1:3,
                              Dict(1=>2)  => [1=>2],
                              (1, 2, 3)   => 1:3)
+
+            dist isa Tuple && VERSION < v"1.1" && continue
             w = W(dist)
             if dist isa DataType
                 @test w isa RandomMonad.UniformType
@@ -56,6 +58,11 @@ end
     for (v0, vs, vp) in vsp
         for v in (v0, wrap(v0), Tuple(v0), wrap(Tuple(v0)),
                   Uniform(v0), Uniform(Tuple(v0)))
+
+            VERSION < v"1.1" &&
+                (v isa Tuple || v isa Uniform && v.val isa Tuple) &&
+                continue
+
             @test support(v) == vs
             fpmf = pmf(v)
             @test pmf(fpmf) === fpmf
@@ -250,10 +257,12 @@ end
     m = MixtureModel((0.5, 0.5), [Normal(), CloseOpen()])
     @test m.cat.cdf == [0.5, 1.0]
     # test that the second argument doesn't need to have length defined
-    m = MixtureModel((1/3, 1/3, 1/3),
-                     Iterators.takewhile(_->true,
-                                         (Normal(), Exponential(), CloseOpen())))
-    @test m.cat.cdf == [1/3, 2/3, 1.0]
+    if VERSION >= v"1.4" # for takewhile
+        m = MixtureModel((1/3, 1/3, 1/3),
+                         Iterators.takewhile(_->true,
+                                             (Normal(), Exponential(), CloseOpen())))
+        @test m.cat.cdf == [1/3, 2/3, 1.0]
+    end
 
     @test_throws ArgumentError MixtureModel([1, 2, 3], [1:3, Normal()])
 end
@@ -393,7 +402,7 @@ end
 end
 
 @testset "Join" begin
-    j = Join(Uniform((Uniform(Float64) + 10, Uniform(Float64))))
+    j = Join(Uniform([Uniform(Float64) + 10, Uniform(Float64)]))
     @test eltype(j) == Float64
     @test all(rand(j, 100)) do x
         0 <= x < 1 || 10 <= x < 11
@@ -493,24 +502,30 @@ end
 
     @test_throws MethodError rand(Filter(x -> x != 0, Zip(-1:1, -1:1)), 40)
 
-    z1 = rand(Filter{Tuple}(x -> x != 0, Zip(-1:1, -1:1)), 3)
-    @test z1 isa Vector{Tuple}
-    z2 = rand(Lift(filter, Pure(x -> x != 0), Zip(-1:1, -1:1)), 3)
-    @test z2 isa Vector{Tuple{Vararg{Int64}}}
-    for z ∈ (z1, z2), t ∈ z
-        @test all(∈((-1, 1)), t)
+    if VERSION >= v"1.4"
+        z1 = rand(Filter{Tuple}(x -> x != 0, Zip(-1:1, -1:1)), 3)
+        @test z1 isa Vector{Tuple}
+        z2 = rand(Lift(filter, Pure(x -> x != 0), Zip(-1:1, -1:1)), 3)
+        @test z2 isa Vector{Tuple{Vararg{Int64}}}
+        for z ∈ (z1, z2), t ∈ z
+            @test all(∈((-1, 1)), t)
+        end
     end
 
     # test reset!
-    a = rand(Fill(Filter(_->true, Zip(Unique(1:4))), 4), 2)
-    @test a isa Vector{Vector{Tuple{Int}}}
+    if VERSION >= v"1.4"
+        a = rand(Fill(Filter(_->true, Zip(Unique(1:4))), 4), 2)
+        @test a isa Vector{Vector{Tuple{Int}}}
+    end
 end
 
 @testset "Reduce" begin
     r = Reduce(+, Fill(1:3, 2))
     @test rand(r) ∈ 2:6
     @test eltype(r) == Int
-    @test all(x -> x==9, rand(Reduce(+, Zip((8,), (1,))), 10))
+    if VERSION >= v"1.1"
+        @test all(x -> x==9, rand(Reduce(+, Zip((8,), (1,))), 10))
+    end
     f = Fill(Reduce(+, Unique(1:4)), 2)
     @test rand(f) isa Vector{Int}
     # check that reset! works properly (otherwise, rand(f, 3) would never terminate)
@@ -547,14 +562,16 @@ end
     @test allunique(a)
 
     z = Fill(Zip(u, u), 3)
-    for i=1:3
-        rz = rand(z)
-        for a = (rand(Fill(u, 3)), first.(rz), last.(rz),
-                 rand(Fill(Lift(identity, u), 3)),
-                 rand(Fill(Lift(+, (0,), u), 3)),
-                 rand(Keep(x->true, u)))
-            @test all(in(1:3), a)
-            @test allunique(a)
+    if VERSION >= v"1.1"
+        for i=1:3
+            rz = rand(z)
+            for a = (rand(Fill(u, 3)), first.(rz), last.(rz),
+                     rand(Fill(Lift(identity, u), 3)),
+                     rand(Fill(Lift(+, (0,), u), 3)),
+                     rand(Keep(x->true, u)))
+                @test all(in(1:3), a)
+                @test allunique(a)
+            end
         end
     end
 
@@ -856,12 +873,14 @@ end
     b = copy(a)
     rand!(a, inner)
     @test a[1] !== b[1]
-    copy!(b, a)
-    rand!(a, Fill(inner, 4), Val(1))
-    @test a[1] !== b[1]
-    copy!(b, a)
-    rand!(a, Fill(inner, 4), Val(2))
-    @test a[1] === b[1]
+    if VERSION >= v"1.1" # copy!
+        copy!(b, a)
+        rand!(a, Fill(inner, 4), Val(1))
+        @test a[1] !== b[1]
+        copy!(b, a)
+        rand!(a, Fill(inner, 4), Val(2))
+        @test a[1] === b[1]
+    end
 
     # pmf
     f = pmf(Fill(1:2, 3))
@@ -937,5 +956,5 @@ end
 
 @testset "discretize!" begin # TODO: more tests
     f = pmf(discretize!(randn(1000), 10))
-    @test length(keys(f)) == 10
+    @test length(keys(f)) ∈ (8, 9, 10) # 8 in about 1/1000 cases
 end

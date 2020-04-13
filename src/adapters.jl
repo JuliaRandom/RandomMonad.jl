@@ -163,7 +163,7 @@ end
 
 function Bind(f::F, x) where F
     rt = Base.return_types(f, (gentype(x),))
-    T = length(rt) > 1 ? Any : rt[1]
+    T = length(rt) != 1 ? Any : rt[1]
     Bind{gentype(T)}(f, x)
 end
 
@@ -273,7 +273,7 @@ end
 
 function Thunk(f::F) where F
     rt = Base.return_types(f, ())
-    T = length(rt) > 1 ? Any : rt[1]
+    T = length(rt) != 1 ? Any : rt[1]
     Thunk{gentype(T)}(f)
 end
 
@@ -316,7 +316,7 @@ Lift{T}(f::F, d...) where {T,F} = Lift{T,F,typeof(d)}(f, d)
 
 function Lift(f::F, d...) where {F}
     rt = Base.return_types(f, map(gentype, d))
-    T = length(rt) > 1 ? Any : rt[1]
+    T = length(rt) != 1 ? Any : rt[1]
     Lift{T}(f, d...)
 end
 
@@ -449,7 +449,7 @@ Map{T}(f::F, d...) where {T,F} = Map{T,F,typeof(d)}(f, d)
 
 function Map(f::F, d...) where {F}
     rt = Base.return_types(map, (F, map(gentype, d)...))
-    T = length(rt) > 1 ? Any : rt[1]
+    T = length(rt) != 1 ? Any : rt[1]
     Map{T}(f, d...)
 end
 

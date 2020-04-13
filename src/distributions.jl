@@ -88,7 +88,7 @@ struct Categorical{T,A,VF} <: Distribution{T}
         if components === nothing
             components = Base.OneTo(Int(n))
         else
-            Base.require_one_based_indexing(components)
+            require_one_based_indexing(components)
         end
         new{eltype(components),typeof(components),Nothing}(components,
                                                            nothing)
@@ -108,7 +108,7 @@ struct Categorical{T,A,VF} <: Distribution{T}
         if components === nothing
             components = Base.OneTo(length(weigths))
         else
-            Base.require_one_based_indexing(components)
+            require_one_based_indexing(components)
         end
 
         length(components) == length(weigths) || throw(ArgumentError(
@@ -201,7 +201,7 @@ Sampler(RNG::Type{<:AbstractRNG}, m::Multinomial, n::Repetition) =
 
 function rand!(rng::AbstractRNG, A::AbstractArray{<:Number},
                sp::SamplerTag{<:Multinomial}, ::Val{1})
-    Base.require_one_based_indexing(A)
+    require_one_based_indexing(A)
     cat = sp.data.cat
     sp.data.ncat != length(A) && resize!(A, sp.data.ncat)
     fill!(A, 0)

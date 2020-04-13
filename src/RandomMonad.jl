@@ -118,6 +118,17 @@ function rand!(rng::AbstractRNG, A::AbstractArray, sp::SamplerReset)
 end
 
 
+## misc
+
+if isdefined(Base, :require_one_based_indexing) # VERSION >= v"1.2"
+    using Base: require_one_based_indexing
+else
+    require_one_based_indexing(A...) =
+        !Base.has_offset_axes(A...) ||
+        throw(ArgumentError("offset arrays are not supported but got an array with index other than 1"))
+end
+
+
 ## includes
 
 include("samplerhelpers.jl")

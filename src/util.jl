@@ -25,7 +25,7 @@ pmf for [-3.2977741401356235, -2.804784333001702, -2.804784333001702, -2.8047843
 ```
 """
 function discretize!(a::AbstractArray{<:Real}, n::Integer=30)
-    Base.require_one_based_indexing(a)
+    require_one_based_indexing(a)
     length(a) < 2n && return a
     n = min(n, length(a) ÷ 2)
     sort!(a)

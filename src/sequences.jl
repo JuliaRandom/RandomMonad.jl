@@ -19,7 +19,7 @@ ERROR: ArgumentError: iterator exhausted
 ```
 
 !!! note
-    Iterate(iter) is semantically equivalent to the following definition:
+    `Iterate(iter)` is semantically equivalent to the following definition:
     ```julia
     function Iterate(iter)
         local st
@@ -301,7 +301,6 @@ struct Shuffle{T,A} <: Distribution{T}
     # multivariate constructor
     Shuffle(a::AbstractArray{T}, n::Integer) where {T} =
         new{Vector{T},typeof(a)}(a, n)
-
 end
 
 function variate_size(sh::Shuffle)

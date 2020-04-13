@@ -110,8 +110,8 @@ generate a random value from distribution specified by `f(x)`.
 
 # Examples
 
-The following expression generates 4 arrays of `Bool` (`Fill(Bool, n)`),
-whose length `n` is chosen at random in `1:5`:
+The following expression generates 4 arrays of `Bool` (created via
+`Fill(Bool, n)`), whose length `n` is chosen at random in `1:5`:
 ```julia
 julia> rand(Bind(n -> Fill(Bool, n), 1:5), 4)
 4-element Array{Array{Bool,1},1}:
@@ -146,8 +146,8 @@ julia> rand(b, 4)
     specialized implementations of certain constructions might
     achieve better performance.
 
-    Moreover, only `X` can have a stateful sampler (non-trivial
-    `reset!` method), the distribution returned by `f` can not:
+    Moreover, only `X` can have a stateful sampler (i.e. which has a
+    non-trivial `reset!` method), the distribution returned by `f` can not:
     indeed, a new sampler is created every time.
     For example, `Bind(n -> Iterate(1:n), 1:9)` always yields `1`.
 """

@@ -14,11 +14,37 @@ less specific and is intended to be generally useful for implementing
 randomness. This is reflected in the core type, a simple `Distribution{T}`,
 where `T` can be anything and is just the type of generated values.
 
+The scope of the package is to provide ready-made tools which can be easily
+combined to create on-the-fly distributions. On the other hand, the
+[RandomExtensions.jl](https://github.com/rfourquet/RandomExtensions.jl)
+package can assist in the definition of sampling methods for custom objects in
+library code.
+
 Currently, `RandomMonad` also implements few classical mathematical
 distributions, like `Bernoulli` or `Poisson`, but these might eventually be
 split off in another dedicated package.
 
 ## Examples
+
+Perhaps one of the simplest ways to combine distributions is to use arithmetic
+operators on them. In the following example, `Uniform(-1:1)` makes `-1:1` an
+explicit distribution (subtype of `Distribution`), which is required in this
+case:
+
+```julia-repl
+julia> rand(5 * Uniform(-1:1) + Normal(), 6)
+6-element Array{Float64,1}:
+  0.3747282015594068
+ -4.5476618093190115
+  4.193624739643829
+  6.758516580679736
+  0.6079472623893868
+ -0.5200061992409745
+```
+
+As one might guess, this takes a random integer in `[-1, 1]`, multiplies it by
+`5`, and adds the result to another random number drawn from the normal
+distribution.
 
 A basic distribution is `Fill(d, n)`, defining the generation of arrays of
 length `n` of elements drawn from distribution `d`:
@@ -47,7 +73,7 @@ length `4` of distinct elements from `1:5`:
 julia> rand(Fill(Shuffle(1:5), 4), 2)
 2-element Array{Array{Int64,1},1}:
  [3, 4, 5, 1]
- [4, 1, 3, 5]
+ [4, 1, 2, 5]
 ```
 This is sampling from a collection "without replacement", and is
 equivalent to `[StatsBase.sample(1:5, 4, replace=false) for _=1:2]`.

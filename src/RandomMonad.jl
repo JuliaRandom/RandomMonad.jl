@@ -8,7 +8,7 @@ export Bernoulli, Bind, Binomial, Categorical, CloseClose, CloseOpen, counts,
        MixtureModel, Multinomial, Normal, OpenClose, OpenOpen, Pack,
        pmf, Poisson, Pure,
        Reduce, SelfAvoid, Shuffle, SubIter, SubSeq, support, Thunk, Uniform,
-       Unique, variate_size, Zip,
+       Unique, variate_size, Zip, Str,
        normalize!, denormalize!
 
 using Random: AbstractRNG, gentype, randexp, randn, Random, randsubseq!,
@@ -137,9 +137,9 @@ include("wrap.jl")
 include("distributions.jl")
 include("floatintervals.jl")
 include("containers.jl")
+include("strings.jl")
 include("adapters.jl")
 include("sequences.jl")
 include("util.jl")
-
 
 end # module

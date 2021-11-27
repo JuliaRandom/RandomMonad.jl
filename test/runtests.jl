@@ -958,3 +958,30 @@ end
     f = pmf(discretize!(randn(1000), 10))
     @test length(keys(f)) ∈ (8, 9, 10) # 8 in about 1/1000 cases
 end
+
+## Strings
+
+@testset "Str" begin
+    b = UInt8['0':'9';'A':'Z';'a':'z']
+
+    combos = [(rand(Str()), b, 8),
+              (rand(Str(3)), b, 3),
+              (rand(Str(0x3)), b, 3),
+              (rand(Str("qwé")), "qwé", 8),
+              (rand(Str(['a', 's', 'd'])), "asd", 8),
+              (rand(Str(UInt8['a', 's', 'd'])), "asd", 8),
+              ]
+    for len = (3, 0x3), chars = ("qwe", collect("qwe"), UInt8['q', 'w', 'e'])
+        push!(combos,
+              (rand(Str(len, chars)), "qwe", 3),
+              (rand(Str(chars, len)), "qwe", 3))
+    end
+    for (s, c, n) in combos
+        @test s ⊆ map(Char, c)
+        @test length(s) == n
+    end
+    @test rand(Str(Char)) isa String
+    @test rand(Str(3, Char)) isa String
+    @test rand(Str(Char, 3)) isa String
+    @test rand(Str(Sampler(MersenneTwister, ['a', 'b', 'c']), 10)) isa String
+end

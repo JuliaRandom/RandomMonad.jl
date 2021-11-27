@@ -961,27 +961,57 @@ end
 
 ## Strings
 
-@testset "Str" begin
+@testset "Strings" begin
     b = UInt8['0':'9';'A':'Z';'a':'z']
+    printable = filter(x -> isprint(Char(x)), 0x00:0x80)
 
-    combos = [(rand(Str()), b, 8),
-              (rand(Str(3)), b, 3),
-              (rand(Str(0x3)), b, 3),
-              (rand(Str("qwé")), "qwé", 8),
-              (rand(Str(['a', 's', 'd'])), "asd", 8),
-              (rand(Str(UInt8['a', 's', 'd'])), "asd", 8),
+    combos = [((), nothing, 8),
+              ((3,), nothing, 3),
+              ((0x3,), nothing, 3),
+              (("qwé",), "qwé", 8),
+              (("qwe",), "qwe", 8),
+              ((['a', 's', 'd'],), "asd", 8),
+              ((UInt8['a', 's', 'd'],), "asd", 8),
               ]
     for len = (3, 0x3), chars = ("qwe", collect("qwe"), UInt8['q', 'w', 'e'])
         push!(combos,
-              (rand(Str(len, chars)), "qwe", 3),
-              (rand(Str(chars, len)), "qwe", 3))
+              ((len, chars), "qwe", 3),
+              ((chars, len), "qwe", 3))
     end
-    for (s, c, n) in combos
-        @test s ⊆ map(Char, c)
-        @test length(s) == n
+
+    # Str
+    for (x, c, n) in combos
+        strs = rand(Str(x...), 2, 3)
+        for str in strs
+            @test str ⊆ map(Char, something(c, b))
+            @test length(str) == n
+        end
+        @test eltype(strs) === String
     end
+
+    # AsciiStr
+    for (x, c, n) in combos
+        if c isa String && !isascii(c)
+            @test_throws ArgumentError AsciiStr(x...)
+            @test_throws ArgumentError AsciiStr(x...; check=true)
+            str = rand(AsciiStr(x...; check=false)) # doesn't error, but produces bad string
+            continue
+        else
+            strcheck = rand(AsciiStr(x...; check=true)) # just check it works
+            str = rand(AsciiStr(x...))
+        end
+        @test str ⊆ map(Char, something(c, printable))
+        @test length(str) == n
+        @test eltype(rand(AsciiStr(x...), 9)) == String
+    end
+
     @test rand(Str(Char)) isa String
     @test rand(Str(3, Char)) isa String
     @test rand(Str(Char, 3)) isa String
     @test rand(Str(Sampler(MersenneTwister, ['a', 'b', 'c']), 10)) isa String
+
+    @test_throws ArgumentError AsciiStr("qwé")
+    @test_throws ArgumentError AsciiStr("qwé"; check=true)
+    @test_throws ArgumentError AsciiStr(1, collect(UInt8, "qwé"))
+    @test_throws ArgumentError AsciiStr(['q', 'w', 'é'])
 end

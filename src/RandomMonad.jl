@@ -8,7 +8,7 @@ export Bernoulli, Bind, Binomial, Categorical, CloseClose, CloseOpen, counts,
        MixtureModel, Multinomial, Normal, OpenClose, OpenOpen, Pack,
        pmf, Poisson, Pure,
        Reduce, SelfAvoid, Shuffle, SubIter, SubSeq, support, Thunk, Uniform,
-       Unique, variate_size, Zip, Str,
+       Unique, variate_size, Zip, Str, AsciiStr,
        normalize!, denormalize!
 
 using Random: AbstractRNG, gentype, randexp, randn, Random, randsubseq!,

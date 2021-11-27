@@ -9,7 +9,7 @@ in order.
 # Examples
 ```jldoctest
 julia> rand(Fill(Iterate(Iterators.countfrom(1)), 3), 2)
-2-element Array{Array{Int64,1},1}:
+2-element Vector{Vector{Int64}}:
  [1, 2, 3]
  [1, 2, 3]
 
@@ -96,13 +96,13 @@ this process is known as "Bernoulli sampling" of `A`.
 # Examples
 ```julia-repl
 julia> rand(SubSeq(1:8, 0.3))
-3-element Array{Int64,1}:
+3-element Vector{Int64}:
  3
  4
  7
 
 julia> rand!(Int[], SubSeq(1:8, 0.3), Val(1))
-2-element Array{Int64,1}:
+2-element Vector{Int64}:
  4
  5
 ```
@@ -150,7 +150,7 @@ independent probability `p`. Note that
 # Examples
 ```julia-repl
 julia> rand(Fill(SubIter(Iterators.countfrom(1), .2), 10), 2)
-2-element Array{Array{Int64,1},1}:
+2-element Vector{Vector{Int64}}:
  [4, 5, 6, 13, 17, 21, 23, 41, 42, 48]
  [2, 6, 12, 28, 49, 51, 58, 60, 65, 66]
 ```

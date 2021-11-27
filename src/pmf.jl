@@ -16,7 +16,7 @@ julia> support([4, 2, 4])
 2:4
 
 julia> support(([3], [1]))
-2-element Array{Array{Int64,1},1}:
+2-element Vector{Vector{Int64}}:
  [1]
  [3]
 ```
@@ -51,7 +51,7 @@ Return the evaluation of the probability mass function of a (discrete)
 # Examples
 ```jldoctest
 julia> [pmf([1, 2, 4, 1], x) for x=0:4]
-5-element Array{Float64,1}:
+5-element Vector{Float64}:
  0.0
  0.5
  0.25

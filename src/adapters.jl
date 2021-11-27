@@ -10,13 +10,13 @@ Wrap `x` as a distribution always yielding `x`.
 # Examples
 ```jldoctest
 julia> rand(Pure(1), 3)
-3-element Array{Int64,1}:
+3-element Vector{Int64}:
  1
  1
  1
 
 julia> rand([1], 3)
-3-element Array{Int64,1}:
+3-element Vector{Int64}:
  1
  1
  1
@@ -114,7 +114,7 @@ The following expression generates 4 arrays of `Bool` (created via
 `Fill(Bool, n)`), whose length `n` is chosen at random in `1:5`:
 ```julia
 julia> rand(Bind(n -> Fill(Bool, n), 1:5), 4)
-4-element Array{Array{Bool,1},1}:
+4-element Vector{Vector{Bool}}:
  [1, 0, 1]
  [1, 1]
  [1, 0, 0, 1, 0]
@@ -131,7 +131,7 @@ julia> b = Bind(Zip([Bool, Normal(), 1:9], Shuffle(1:4))) do (t, n)
            end;
 
 julia> rand(b, 4)
-4-element Array{Any,1}:
+4-element Vector{Any}:
  [-0.2900266833838387]
  Bool[0, 0, 1]
  Bool[0, 1, 1, 0]
@@ -199,7 +199,7 @@ julia> rand(Join(Pure(Normal())))
 1.3938116112906205
 
 julia> rand(Join([Normal(), Normal(10.0, 1.0)]), 5)
-5-element Array{Float64,1}:
+5-element Vector{Float64}:
   0.8017321165720984
   9.987814723449322
  10.886780925603274
@@ -257,7 +257,7 @@ julia> rand(let i::Int = 0
                    Uniform(1:i)
                 end
             end, 5)
-5-element Array{Int,1}:
+5-element Vector{Int}:
  1
  1
  3
@@ -295,7 +295,7 @@ yielded values `xs...` from `Xs...`, yields `f(xs...)`.
 # Examples
 ```julia-repl
 julia> rand(Lift(+, 0:10:20, Normal()), 5)
-5-element Array{Float64,1}:
+5-element Vector{Float64}:
  -1.8066739854479257
  20.285455058446814
   8.674837595869976
@@ -368,7 +368,7 @@ only those for which `f` is `true`.
 # Examples
 ```julia-repl
 julia> rand(Keep(iseven, 1:9), 5)
-5-element Array{Int64,1}:
+5-element Vector{Int64}:
  2
  8
  2
@@ -433,7 +433,7 @@ yielding `map(f, d...)`.
 # Examples
 ```julia
 julia> rand(Map(+, Fill(0:10:20, 4), Fill(Normal(), 4)))
-4-element Array{Float64,1}:
+4-element Vector{Float64}:
  20.51571632364027
  10.458305495441273
   0.24391036203770697
@@ -499,7 +499,7 @@ it has type `T` instead, use the second form `Filter{T}(f, X)`.
 # Examples
 ```julia-repl
 julia>  rand(Filter(x -> x != 0, Fill(-1:1, 6)))
-4-element Array{Int64,1}:
+4-element Vector{Int64}:
  -1
  -1
   1
@@ -512,13 +512,13 @@ ERROR: MethodError: Cannot `convert` an object of type
 [...]
 
 julia> rand(Filter{Tuple}(x -> x != 0, Zip(-1:1, -1:1)), 3)
-3-element Array{Tuple,1}:
+3-element Vector{Tuple}:
  (-1,)
  ()
  (1, -1)
 
 julia> rand(Lift(filter, Pure(x -> x != 0), Zip(-1:1, -1:1)), 3)
-3-element Array{Tuple{Vararg{Int64,N} where N},1}:
+3-element Vector{Tuple{Vararg{Int64,N} where N}}:
  (-1, 1)
  ()
  (1, -1)

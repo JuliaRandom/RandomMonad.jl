@@ -506,7 +506,7 @@ end
         z1 = rand(Filter{Tuple}(x -> x != 0, Zip(-1:1, -1:1)), 3)
         @test z1 isa Vector{Tuple}
         z2 = rand(Lift(filter, Pure(x -> x != 0), Zip(-1:1, -1:1)), 3)
-        @test z2 isa Vector{Tuple{Vararg{Int64}}}
+        @test z2 isa Vector{<:Tuple{Vararg{Int64}}}
         for z ∈ (z1, z2), t ∈ z
             @test all(∈((-1, 1)), t)
         end

@@ -46,4 +46,3 @@ jobs:
           git config --global user.email te@st.er
 
       - uses: julia-actions/julia-runtest@latest
-        continue-on-error: ${{ matrix.version == 'nightly' || matrix.version == '^1.7.0-0' }}

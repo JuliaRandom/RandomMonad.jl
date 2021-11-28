@@ -76,61 +76,140 @@ rand(rng::AbstractRNG, sp::SamplerTag{Binomial}) =
 
 ## Categorical ###############################################################
 
-struct Categorical{T,A,VF} <: Distribution{T}
-    components::A
-    cdf::VF
+struct Categorical{T,S,VF} <: Distribution{T}
+    support::S
+    cdf::VF # Vector{Float64} or Nothing if equal probabilities
 
     # raw constructor
-    global _Categorical(::Type{T}, cdf, components) where {T} =
-        new{T,typeof(components),typeof(cdf)}(components, cdf)
+    global _Categorical(support, cdf) =
+        new{eltype(support), typeof(support), typeof(cdf)}(support, cdf)
 
-    function Categorical(n::Number, components=nothing) # equal weigths
-        if components === nothing
-            components = Base.OneTo(Int(n))
+    function Categorical((support, weigths)::Pair{S}) where S
+        if support === nothing
+            support = Base.OneTo(length(weigths))
         else
-            require_one_based_indexing(components)
+            require_one_based_indexing(support)
         end
-        new{eltype(components),typeof(components),Nothing}(components,
-                                                           nothing)
-    end
-
-    function Categorical(weigths, components=nothing)
-        if !isa(weigths, AbstractArray)
-            # necessary for accumulate
-            # TODO: will not be necessary anymore in Julia 1.5
-            weigths = collect(weigths)
-        end
-        weigths = vec(weigths)
-
-        isempty(weigths) &&
+        isempty(support) &&
             throw(ArgumentError("Categorical requires at least one category"))
 
-        if components === nothing
-            components = Base.OneTo(length(weigths))
+        if weigths isa Real
+            _Categorical(support, nothing)
         else
-            require_one_based_indexing(components)
+            if Base.haslength(weigths) && length(weigths) != length(support)
+                throw(ArgumentError("support and weigths have incompatible lengths"))
+            end
+            # like accumulate, but not available on non-array on Julia 1.4-
+            cdf = Vector{Float64}(undef, length(support))
+            cdf[end] = 0.0 # to check that it gets overwritten
+            total = Float64(sum(weigths))
+            prev = 0.0
+            for (ii, wei) in enumerate(weigths)
+                wei::Real
+                # will fail if length(weigths) > length(cdf)
+                prev = cdf[ii] = prev + Float64(wei) / total
+            end
+            if !(isapprox(cdf[end], 1.0))
+                throw(ArgumentError("normalization failed, `support` and `weigths` might not be of the same length"))
+            end
+            cdf[end] = 1.0 # to be sure the algo terminates
+            _Categorical(support, cdf)
         end
-
-        length(components) == length(weigths) || throw(ArgumentError(
-            "components and weigths must have the same length"))
-
-        s = Float64(sum(weigths))
-        cdf = accumulate(weigths; init=0.0) do x, y
-            x + Float64(y) / s
-        end
-        @assert isapprox(cdf[end], 1.0) # really?
-        cdf[end] = 1.0 # to be sure the algo terminates
-        new{eltype(components),typeof(components),Vector{Float64}}(
-            components, cdf)
     end
+
 end
 
-ncategories(c::Categorical) = length(c.components)
+"""
+    Categorical(support, weigths) :: Distribution{eltype(support)}
+
+Create a discrete distribution such that the probability for the
+outcome `support[i]` is `weigths[i] / sum(weigths)`.
+
+As a special case, if `weigths` is an integer `k`, this is equivalent
+to `Categorical(support, fill(k, length(support)))`, i.e. all the
+outcomes have the same probability (this is a discrete uniform
+distribution).
+
+# Examples
+```julia-repl
+julia> pmf(rand(Categorical([:a, :b, :c], [3, 2, 1]), 10000))
+pmf for [:c, :a, :c, :a, :a, :a, :a, :a, :a, :a  …  :b, :a, :a, :a, :a, :a, :a, :a, :b, :a] with support of length 3:
+  :a => 0.4992
+  :b => 0.3319
+  :c => 0.1689
+
+julia> julia> pmf(rand(Categorical([:a, :b, :c], 1), 10000))
+pmf for [:a, :b, :b, :a, :b, :a, :a, :a, :c, :a  …  :a, :b, :b, :c, :c, :b, :b, :b, :b, :b] with support of length 3:
+  :a => 0.3353
+  :b => 0.3344
+  :c => 0.3303
+```
+"""
+Categorical(support, weigths) = Categorical(support => weigths)
+
+"""
+    Categorical(components)
+
+Equivalent to `Categorical(support, weigths)`, where `support` and `weigths`
+are vectors defined as follows:
+* if `ci = components[i]` is a `Pair`, then `support[i] = ci[1]` and
+  `weigths[i] = ci[2]`
+* otherwise, `support[i] = i` and `weigths[i] = ci`.
+
+# Examples
+
+```julia-repl
+julia> pmf(rand(Categorical([:a => 3, :b => 2, :c => 1]), 10000))
+pmf for [:a, :b, :b, :a, :b, :b, :a, :b, :c, :b  …  :c, :a, :b, :c, :c, :c, :b, :b, :b, :a] with support of length 3:
+  :a => 0.4992
+  :b => 0.3359
+  :c => 0.1649
+
+julia> pmf(rand(Categorical([3, 2, 1]), 10000))
+pmf for [1, 3, 1, 3, 2, 1, 2, 2, 2, 1  …  1, 1, 1, 1, 2, 1, 3, 3, 1, 3] with support of length 3:
+  1 => 0.5011
+  2 => 0.3349
+  3 => 0.164
+```
+"""
+function Categorical(pairs)
+    if eltype(pairs) <: Real
+        # pairs is a weigths vector, take a shorcut
+        return Categorical(nothing => pairs)
+    end
+
+    support = [kv isa Pair ? kv[1] : j for (j, kv) in enumerate(pairs)]
+    weigths = (kv isa Pair ? kv[2] : kv for kv in pairs)
+    Categorical(support => weigths)
+end
+
+"""
+    Categorical(n::Integer)
+
+Equivalent to `Categorical(1:n, 1)`.
+
+# Examples
+```julia-repl
+julia> pmf(rand(Categorical(3), 10000))
+pmf for [3, 1, 2, 2, 2, 2, 3, 3, 2, 3  …  1, 1, 3, 2, 3, 1, 3, 2, 2, 3] with support of length 3:
+  1 => 0.3334
+  2 => 0.3314
+  3 => 0.3352
+```
+"""
+Categorical(n::Integer) = Categorical(Base.OneTo(n) => 1)
+
+# without this constructor, Categorical(3) and Categorical(3.0) would have
+# totally different meanings, which we want to avoid
+Categorical(n::Real) =
+    throw(ArgumentError("did you mean `Categorical(Int(n))` ?"))
+
+ncategories(c::Categorical) = length(c.support)
 
 # unfortunately requires @inline to avoid allocating
 @inline rand(rng::AbstractRNG, sp::SamplerTrivial{<:Categorical}) =
     let c = rand(rng, CloseOpen())
-        @inbounds sp[].components[findfirst(x -> x >= c, sp[].cdf)]
+        @inbounds sp[].support[findfirst(x -> x >= c, sp[].cdf)]
     end
 
 # NOTE:
@@ -139,7 +218,7 @@ ncategories(c::Categorical) = length(c.components)
 
 Sampler(::Type{RNG}, c::Categorical{T,A,Nothing},
         n::Repetition) where {RNG<:AbstractRNG,T,A} =
-    SamplerTag{typeof(c)}(Sampler(RNG, c.components, n))
+    SamplerTag{typeof(c)}(Sampler(RNG, c.support, n))
 
 rand(rng::AbstractRNG, sp::SamplerTag{<:Categorical}) =
     rand(rng, sp.data)
@@ -225,10 +304,10 @@ end
 
 MixtureModel(cat::Categorical) = MixtureModel{gentype(eltype(cat))}(cat)
 
-function MixtureModel(weigths, components)
-    components = map(wrap, components)
-    T = reduce(typejoin, (gentype(x) for x in components))
-    MixtureModel{T}(Categorical(weigths, components))
+function MixtureModel(weigths, support)
+    support = map(wrap, support)
+    T = reduce(typejoin, (gentype(x) for x in support))
+    MixtureModel{T}(Categorical(support, weigths))
 end
 
 
@@ -242,8 +321,8 @@ Sampler(::Type{RNG}, m::MixtureModel{T},
         n::Val{Inf}) where {RNG<:AbstractRNG,T} =
     SamplerTag{typeof(m)}(
         Sampler(RNG,
-                _Categorical(T, m.cat.cdf,
-                             map(c -> Sampler(RNG, c, n), m.cat.components)),
+                _Categorical(map(c -> Sampler(RNG, c, n), m.cat.support),
+                             m.cat.cdf),
                 n))
 
 @inline rand(rng::AbstractRNG, sp::SamplerTag{<:MixtureModel}) =

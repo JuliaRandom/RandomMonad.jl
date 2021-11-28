@@ -189,19 +189,21 @@ end
     @test rand(Categorical(n)) ∈ 1:9
     @test all(∈(1:9), rand(Categorical(n), 10))
     @test rand(Categorical(n)) isa Int
-    c = Categorical(Float64(n))
-    @test rand(c) isa Int
-    @test rand(c) ∈ 1:9
-    c = Categorical([1, 7, 2])
-    # cf. Bernoulli tests
-    @test 620 < count(==(2), rand(c, 1000)) < 780
-    @test rand(c) isa Int
+    @test_throws ArgumentError Categorical(Float64(n))
+    for c = (Categorical([1, 7, 2]),
+             Categorical([1 => 1, 2 => 7, 3 => 2]),
+             Categorical([1, 2, 3], [1, 7, 2]))
+        # cf. Bernoulli tests
+        @test 620 < count(==(2), rand(c, 1000)) < 780
+        @test rand(c) isa Int
+    end
     @test rand(Categorical(Float64.((1, 2, 3, 4)))) isa Int
-    @test rand(Categorical(3, 1.0:3.0)) isa Float64
+    @test rand(Categorical(1.0:3.0, 3)) isa Float64
 
     @test_throws ArgumentError Categorical(())
     @test_throws ArgumentError Categorical([])
     @test_throws ArgumentError Categorical(x for x in 1:0)
+    @test_throws ArgumentError Categorical(3.0)
 end
 
 @testset "Multinomial" begin
@@ -252,7 +254,7 @@ end
     @test 620 < count(x -> x isa Float64, xs) < 780
 
     m = MixtureModel((1,2), [Normal(), CloseOpen()])
-    @test eltype(m.cat.components) == Distribution{Float64} # not crucial
+    @test eltype(m.cat.support) == Distribution{Float64} # not crucial
 
     m = MixtureModel((0.5, 0.5), [Normal(), CloseOpen()])
     @test m.cat.cdf == [0.5, 1.0]

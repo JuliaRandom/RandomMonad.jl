@@ -39,3 +39,19 @@ function discretize!(a::AbstractArray{<:Real}, n::Integer=30)
     end
     a
 end
+
+
+## DictWrap
+
+struct DictWrap{W, K, V} <: AbstractDict{K, V}
+    wrap::W
+
+    DictWrap(wrap) = new{typeof(wrap), keytype(wrap), valtype(wrap)}(wrap)
+end
+
+Base.getindex(dw::DictWrap, x) = dw.wrap[x]
+Base.keys(dw::DictWrap) = keys(dw.wrap)
+Base.values(dw::DictWrap) = values(dw.wrap)
+Base.length(dw::DictWrap) = length(dw.wrap)
+Base.summary(io::IO, dw::DictWrap) = Base.summary(io, dw.wrap)
+Base.iterate(dw::DictWrap, st...) = Base.iterate(dw.wrap, st...)

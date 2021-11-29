@@ -120,7 +120,7 @@ pmf(d) = PMF(d)
 
 # a struct to cache values of pmf
 # function, and map interface mostly for printing purposes
-mutable struct PMF{T,D} <: AbstractDict{T,Float64}
+mutable struct PMF{T,D} <: Distribution{T}
     d::D
     pmf::Dict{T,Float64}
     cached::Bool                      # all values cached
@@ -273,12 +273,18 @@ function Base.keys(f::PMF)
         keys(f.pmf)
 end
 
+Base.keytype(::Type{<:PMF{T}}) where {T} = T
+Base.keytype(f::PMF) = keytype(typeof(f))
+
 function Base.values(f::PMF)
     cacheall!(f)
     f.support !== nothing ?
         (f.pmf[x] for x in f.support) :
         values(f.pmf)
 end
+
+Base.valtype(::Type{PMF}) = Float64
+Base.valtype(::PMF) = Float64
 
 Base.getindex(f::PMF, x) = cacheall!(f).pmf[x]
 Base.length(f::PMF) = length(cacheall!(f).pmf)
@@ -293,6 +299,10 @@ function Base.iterate(f::PMF, iter=iterate(keys(cacheall!(f))))
     iter === nothing && return nothing
     (iter[1] => f.pmf[iter[1]]), iterate(keys(f), iter[2])
 end
+
+Base.show(io::IO, f::PMF) = println(io, pmf, '(', f.d, ')')
+
+Base.show(io::IO, m::MIME"text/plain", f::PMF) = show(io, m, DictWrap(f))
 
 
 ## sampling

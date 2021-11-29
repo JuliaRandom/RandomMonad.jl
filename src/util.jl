@@ -54,4 +54,10 @@ Base.keys(dw::DictWrap) = keys(dw.wrap)
 Base.values(dw::DictWrap) = values(dw.wrap)
 Base.length(dw::DictWrap) = length(dw.wrap)
 Base.summary(io::IO, dw::DictWrap) = Base.summary(io, dw.wrap)
+Base.typeinfo_prefix(io::IO, dw::DictWrap) =
+    sprint(Base.show_type_name, typeof(dw.wrap).name), false
+
 Base.iterate(dw::DictWrap, st...) = Base.iterate(dw.wrap, st...)
+
+Base.keytype(d::Distribution) = keytype(typeof(d))
+Base.valtype(d::Distribution) = valtype(typeof(d))

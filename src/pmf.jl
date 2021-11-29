@@ -301,7 +301,6 @@ function Base.iterate(f::PMF, iter=iterate(keys(cacheall!(f))))
 end
 
 Base.show(io::IO, f::PMF) = println(io, pmf, '(', f.d, ')')
-
 Base.show(io::IO, m::MIME"text/plain", f::PMF) = show(io, m, DictWrap(f))
 
 

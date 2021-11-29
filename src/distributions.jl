@@ -206,6 +206,24 @@ Categorical(n::Real) =
 
 ncategories(c::Categorical) = length(c.support)
 support(c::Categorical) = c.support
+Base.keytype(::Type{<:Categorical{T}}) where {T} = T
+Base.valtype(::Type{<:Categorical}) = Float64
+Base.length(c::Categorical) = length(c.support)
+
+function Base.iterate(c::Categorical, st=1)
+    if st in eachindex(c.support)
+        (c.support[st] => pmf(c, c.support[st]),
+         st+1)
+    else
+        nothing
+    end
+end
+
+Base.summary(io::IO, c::Categorical) =
+    print(io, "Categorical distribution with support of length ", length(c.support))
+
+Base.show(io::IO, c::Categorical) = println(IOContext(io, :compact => true), DictWrap(c))
+Base.show(io::IO, m::MIME"text/plain", c::Categorical) = show(io, m, DictWrap(c))
 
 function pmf(c::Categorical, x)
     if c.cdf === nothing

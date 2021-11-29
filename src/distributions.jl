@@ -205,6 +205,20 @@ Categorical(n::Real) =
     throw(ArgumentError("did you mean `Categorical(Int(n))` ?"))
 
 ncategories(c::Categorical) = length(c.support)
+support(c::Categorical) = c.support
+
+function pmf(c::Categorical, x)
+    if c.cdf === nothing
+        x in c.support ? 1/length(c.support) : 0.0
+    else
+        prev = 0.0
+        for (u, p) in zip(c.support, c.cdf)
+            isequal(x, u) && return p-prev
+            prev = p
+        end
+        return 0.0
+    end
+end
 
 # unfortunately requires @inline to avoid allocating
 @inline rand(rng::AbstractRNG, sp::SamplerTrivial{<:Categorical}) =

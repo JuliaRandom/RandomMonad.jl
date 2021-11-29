@@ -186,16 +186,36 @@ end
 
 @testset "Categorical" begin
     n = rand(1:9)
-    @test rand(Categorical(n)) ∈ 1:9
-    @test all(∈(1:9), rand(Categorical(n), 10))
-    @test rand(Categorical(n)) isa Int
+    cn = Categorical(n)
+    @test rand(cn) ∈ 1:n
+    @test all(∈(1:n), rand(cn, 10))
+    @test rand(cn) isa Int
+    @test support(cn) == 1:n
+    pcn = pmf(cn)
+    for x in -1:n+1
+        if x in 1:n
+            @test pcn(x) ==  pmf(cn, x) == 1/n
+        else
+            @test pcn(x) == pmf(cn, x) == 0.0
+        end
+    end
+
     @test_throws ArgumentError Categorical(Float64(n))
+
     for c = (Categorical([1, 7, 2]),
              Categorical([1 => 1, 2 => 7, 3 => 2]),
              Categorical([1, 2, 3], [1, 7, 2]))
         # cf. Bernoulli tests
         @test 620 < count(==(2), rand(c, 1000)) < 780
         @test rand(c) isa Int
+        @test support(c) == 1:3
+        pc = pmf(c)
+        @test pc[1] == pmf(c, 1) ≈ 0.1
+        @test pc[2] == pmf(c, 2) ≈ 0.7
+        @test pc[3] == pmf(c, 3) ≈ 0.2
+        for x in Any[-1, -2, 0, 0.5, :a, "qwe", 4, 6.0]
+            @test pc(x) === pmf(c, x) === 0.0
+        end
     end
     @test rand(Categorical(Float64.((1, 2, 3, 4)))) isa Int
     @test rand(Categorical(1.0:3.0, 3)) isa Float64
